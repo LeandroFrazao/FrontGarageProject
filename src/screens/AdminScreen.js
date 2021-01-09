@@ -71,11 +71,8 @@ export default function UserScreen({ navigation }) {
     <View style={styles.container}>
       <View style={styles.body}>
         <View style={styles.boxTitle}>
+          <Text style={styles.title}>Administrator </Text>
           <Text style={styles.title}>User: {userData.name} </Text>
-          <Text style={styles.title}>Email: {userData.email}</Text>
-          <Text style={styles.title}>Phone: {userData.phone}</Text>
-          <Text style={styles.title}>Address: {userData.address}</Text>
-          <Text style={styles.title}>City: {userData.city}</Text>
         </View>
         <View style={styles.buttons}>
           <BTN
@@ -127,10 +124,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#E6E6E6",
     width: "100%",
     height: 150,
+    alignItems: "center",
     justifyContent: "center",
   },
   title: {
-    fontFamily: "helvetica",
+    fontFamily: "Roboto",
     color: "rgba(31,31,78,1)",
     fontSize: 18,
     marginLeft: 35,

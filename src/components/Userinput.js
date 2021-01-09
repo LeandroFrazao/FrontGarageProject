@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     alignSelf: "stretch",
     lineHeight: 16,
-    paddingTop: 8,
+    paddingTop: 0,
     flex: 1,
     paddingBottom: 8,
     width: 200,

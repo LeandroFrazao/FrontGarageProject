@@ -1,27 +1,34 @@
 import axios from "axios";
-import { useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Create axios client, pre-configured with baseURL
 export const APIConnect = axios.create({
-  //baseURL: "https://tranquil-coast-47648.herokuapp.com",
-  baseURL: "http://localhost:3000",
+  baseURL: "https://tranquil-coast-47648.herokuapp.com",
+  //baseURL: "http://localhost:3000",
 
   timeout: 100000,
 });
 
-// Set JSON Web Token in Client to be included in all calls
-export const setUserToken = (token) => {
-  APIConnect.interceptors.request.use(
+//Delete  headers authorizarion
+export const DeleteUserToken = () => {
+  //console.log("Apiconnect deleted");
+  delete APIConnect.defaults.headers.common["Authorization"];
+};
+
+// Set  Token in Authorization to be included in all calls
+export const SetUserToken = (token) => {
+  APIConnect.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  /* APIConnect.interceptors.request.use(
     (config) => {
+      console.log("aqui 2", token);
       config.headers.Authorization = `Bearer ${token}`;
-      ///config.headers["Authorization"] = "Bearer " + token;
+
       return config;
     },
     (error) => {
       return Promise.reject(error);
     }
-  );
+  ); */
 };
 
 export const RemoveStorage = async (item) => {
@@ -85,9 +92,25 @@ export const Register = async ({
     key,
   });
 };
+//only admin
+export const GetVehicles = async (email) => {
+  return await APIConnect.get("/vehicles/" + email);
+};
 
-export const Vehicles = async (email) => {
-  return await APIConnect.get("/vehicles/");
+// get user vehicles
+export const GetUserVehicles = async (email) => {
+  return await APIConnect.get("/users/" + email + "/vehicles");
+};
+
+export const AddVehicles = async ({ vin, type, make, model, engine, year }) => {
+  return await APIConnect.post("/vehicles", {
+    vin,
+    type,
+    make,
+    model,
+    engine,
+    year,
+  });
 };
 
 export default APIConnect;

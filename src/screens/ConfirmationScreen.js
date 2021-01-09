@@ -15,7 +15,7 @@ export default function ConfirmationScreen({ navigation }) {
       try {
         let msg = "Error, try again";
         let userEmail = navigation.state.params.userEmail;
-        console.log(navigation.state.params.userEmail);
+        // console.log(navigation.state.params.userEmail);
 
         if (userEmail == null) {
           setMsgText({ ...msgText, msg: msg, error: true, btn: "Back" });
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontFamily: "helvetica",
+    fontFamily: "Roboto",
     color: "rgba(31,31,78,1)",
     fontSize: 20,
     textAlign: "center",

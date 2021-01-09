@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import { StyleSheet, View } from "react-native";
 import BTN from "../components/BTN";
+import { DeleteUserToken } from "../services/APIConnect";
 
 export default function FirstScreen({ navigation }) {
   return (
@@ -10,6 +11,7 @@ export default function FirstScreen({ navigation }) {
           style={styles.btn}
           text="Login"
           onPress={() => {
+            DeleteUserToken();
             navigation.navigate("LoginScreen");
           }}
         ></BTN>

@@ -1,13 +1,19 @@
 import React from "react";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StyleSheet, View, Text } from "react-native";
 import Keyinput from "../components/Keyinput";
 import Userinput from "../components/Userinput";
 import BTN from "../components/BTN";
-import { Register } from "../services/APIConnect";
+import {
+  Login,
+  UserEmail,
+  Register,
+  SaveStorage,
+  RemoveStorage,
+} from "../services/APIConnect";
 
-function RegisterScreen({ navigation }) {
+function AddVehicleScreen({ navigation }) {
   const [userData, setUserData] = useState({
     name: "",
     email: "",
@@ -31,14 +37,24 @@ function RegisterScreen({ navigation }) {
     console.log(data);
     //setUserToken(data.token);
 
+    await SaveStorage("userEmail", userData.email);
+    await SaveStorage("Error", data.user);
+
     navigation.navigate("ConfirmationScreen", { userEmail: userData.email });
 
+    //RemoveStorage("Error", "");
+    //localStorage.setItem("user", JSON.stringify(data.token));
+
+    //setUserData(data);
     return data;
   };
   const onFailure = async (error) => {
     console.log(error);
     if (error && error.response) {
       console.log(error.response);
+      //console.log(error.response.data.error);
+      //console.log(error.response.data.Security);
+      //console.log(error && error.response);
       if (error.response.data.error) {
         console.log("error 1");
         setHelperData({ ...helperData, email: error.response.data.error });
@@ -49,6 +65,10 @@ function RegisterScreen({ navigation }) {
       }
     }
   };
+
+  useEffect(() => {
+    // Update the document title using the browser API
+  });
 
   const validateData = ({ prop, item }) => {
     let toReturn = {};
@@ -223,4 +243,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RegisterScreen;
+export default AddVehicleScreen;
