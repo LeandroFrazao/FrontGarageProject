@@ -1,10 +1,14 @@
 import React, { Component } from "react";
 import { useState, useEffect } from "react";
-import { StyleSheet, View, Text } from "react-native";
+import { StyleSheet, View, Text, Alert, Platform } from "react-native";
 import Header from "../components/HeaderScreen";
 
 import BTN from "../components/BTN";
-import { GetUserVehicles } from "../services/APIConnect";
+import {
+  GetUserVehicles,
+  DeleteVehicle,
+  UserEmail,
+} from "../services/APIConnect";
 
 export default function UserScreen({ navigation }) {
   const [userData, setUserData] = useState({
@@ -17,36 +21,10 @@ export default function UserScreen({ navigation }) {
     key: "",
   });
   const [vehicleData, setVehicleData] = useState([]);
-  /* {
-      vin: "",
-      type: "",
-      make: "",
-      model: "",
-      engine: "",
-      year: "",
-    },
-  ]); */
-  const [helperData, setHelperData] = useState({
-    msg: "",
-  });
+  const [helperData, setHelperData] = useState({ msg: "" });
 
-  const onSuccess = ({ data }) => {
-    console.log(data);
-    console.log(data.users[0]);
-
-    setUserData({
-      name: data.users[0].name,
-      email: data.users[0].email,
-      phone: data.users[0].phone,
-      address: data.users[0].address,
-      city: data.users[0].city,
-      key: data.users[0].key,
-    });
-
-    return data;
-  };
   const onFailure = (error) => {
-    if (error) {
+    if (error && error.response) {
       console.log(error);
       if (error.response.data.error) {
         setHelperData({ ...helperData, msg: "No Vehicles" });
@@ -82,12 +60,6 @@ export default function UserScreen({ navigation }) {
         vehicles = response.data.users[0].vehicles;
         console.log(vehicles);
         setVehicleData((vehicleData) => vehicleData.concat(vehicles));
-        /*  setVehicleData({ ...vehicleData,vin: data.vin,
-        type: data.type,
-        make: data.make,
-        model:data.model,
-        engine: data.engine,
-        year: data.year, })  */
       })
       .catch(onFailure);
   };
@@ -97,9 +69,43 @@ export default function UserScreen({ navigation }) {
     loadUserData();
   }, []);
 
-  function onClick() {
-    // UserEmail("bolivar@lgmail.com").then(onSuccess).catch(onFailure);
-  }
+  const deleteVehicle = ({ vin }) => {
+    console.log(vin + " deleted");
+    setVehicleData(vehicleData.filter((element) => element.vin !== vin));
+    /* await DeleteVehicle({ email: userData.email, vin: vin })
+    .then((result) => {
+      setVehicleData( vehicleData.filter(element => element.vin !== vin))
+      console.log(result);
+    })
+    .catch(onFailure); */
+  };
+  const DelClick = async ({ vin }) => {
+    if (Platform.OS == "web") {
+      if (confirm("Confirm to delete Vehicle: " + vin + " ?")) {
+        deleteVehicle({ vin: vin });
+      }
+    } else {
+      Alert.alert(
+        "Delete Vehicle: " + vin,
+        "Confirm?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "OK",
+            onPress: async () => {
+              deleteVehicle({ vin: vin });
+            },
+          },
+        ],
+        { cancelable: false }
+      );
+    }
+
+    /* */
+  };
   /* <Text style={styles.details}>
                   Type: {element.type}
                   Make: {element.make}
@@ -127,21 +133,21 @@ export default function UserScreen({ navigation }) {
             onPress={() => {
               onClick();
             }}
-          ></BTN>
+          />
           <BTN
             style={styles.btn}
             text="Service"
             onPress={() => {
               onClick();
             }}
-          ></BTN>
+          />
           <BTN
             style={styles.btn}
             text="History"
             onPress={() => {
               onClick();
             }}
-          ></BTN>
+          />
         </View>
         <View style={styles.boxVehicles}>
           <View style={styles.headerVehicles}>
@@ -153,31 +159,51 @@ export default function UserScreen({ navigation }) {
             ) : (
               vehicleData &&
               vehicleData.map((element, index) => {
-                console.log(element.type, index);
                 let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
-                console.log(color);
                 return (
                   <View
                     key={index}
                     style={(styles.blockVehicle, { backgroundColor: color })}
                   >
-                    <Text style={styles.vehicleText}>
-                      {" "}
-                      Type: {element.type}
-                      {"      "}Make: {element.make}
-                      {"      "}Engine: {element.engine}
-                    </Text>
+                    <View style={{ flexDirection: "row" }}>
+                      <View style={{ maxWidth: 320 }}>
+                        <Text style={styles.vehicleText}>
+                          {" "}
+                          Type: {element.type}
+                          {"      "}Make: {element.make}
+                          {"      "}Engine: {element.engine}
+                        </Text>
+                        <Text style={styles.vehicleText}>
+                          {" "}
+                          Model: {element.model}
+                          {"      "}Year: {element.year}
+                          {"      "}VIN: {element.vin}
+                        </Text>
+                      </View>
+                      <View>
+                        <BTN
+                          style={styles.smallBtn}
+                          styleCaption={styles.smallBtnText}
+                          text="Edit"
+                          onPress={() => {
+                            // EditClick();
+                          }}
+                        ></BTN>
 
-                    <Text style={styles.vehicleText}>
-                      {" "}
-                      Model: {element.model}
-                      {"      "}Year: {element.year}
-                    </Text>
+                        <BTN
+                          style={styles.smallBtn}
+                          styleCaption={styles.smallBtnText}
+                          text="Del"
+                          onPress={() => {
+                            DelClick({ vin: element.vin });
+                          }}
+                        />
+                      </View>
+                    </View>
                   </View>
                 );
               })
             )}
-            {console.log(vehicleData)}
           </View>
         </View>
       </View>
@@ -255,7 +281,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 5,
     textAlign: "left",
-    marginHorizontal: 35,
+    width: 300,
+    marginHorizontal: 10,
   },
   blockVehicle: {
     fontFamily: "Roboto",
@@ -276,5 +303,16 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(85,83,10,1)",
 
     marginBottom: 30,
+  },
+  smallBtn: {
+    height: 18,
+    width: 28,
+    marginVertical: 3,
+    backgroundColor: "rgba(85,83,208,1)",
+    paddingLeft: 0,
+    paddingRight: 0,
+  },
+  smallBtnText: {
+    fontSize: 12,
   },
 });

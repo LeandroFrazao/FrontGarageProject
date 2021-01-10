@@ -1,10 +1,10 @@
 import React, { Component } from "react";
 import { StyleSheet, TouchableOpacity, Text } from "react-native";
 
-function BTN({ text, style, onPress }) {
+function BTN({ text, style, onPress, styleCaption }) {
   return (
     <TouchableOpacity style={[styles.container, style]} onPress={onPress}>
-      <Text style={styles.caption}>{text}</Text>
+      <Text style={[styles.caption, styleCaption]}>{text}</Text>
     </TouchableOpacity>
   );
 }
@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 5,
     elevation: 2,
-    minWidth: 88,
+    width: 88,
     paddingLeft: 16,
     paddingRight: 16,
   },

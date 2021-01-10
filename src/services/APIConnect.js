@@ -113,4 +113,13 @@ export const AddVehicles = async ({ vin, type, make, model, engine, year }) => {
   });
 };
 
+export const DeleteVehicle = async ({ email, vin }) => {
+  console.log(email, vin);
+  return await APIConnect.delete("/users/" + email + "/vehicles", {
+    data: {
+      vin: vin,
+    },
+  });
+};
+
 export default APIConnect;
