@@ -97,12 +97,20 @@ export const GetVehicles = async (email) => {
   return await APIConnect.get("/vehicles/" + email);
 };
 
-// get user vehicles
+// Get user's vehicles
 export const GetUserVehicles = async (email) => {
   return await APIConnect.get("/users/" + email + "/vehicles");
 };
-
-export const AddVehicles = async ({ vin, type, make, model, engine, year }) => {
+// Add user vehicles
+export const AddVehicles = async ({
+  vin,
+  type,
+  make,
+  model,
+  engine,
+  year,
+  email,
+}) => {
   return await APIConnect.post("/vehicles", {
     vin,
     type,
@@ -110,9 +118,10 @@ export const AddVehicles = async ({ vin, type, make, model, engine, year }) => {
     model,
     engine,
     year,
+    email,
   });
 };
-
+// Delete user's vehicle
 export const DeleteVehicle = async ({ email, vin }) => {
   console.log(email, vin);
   return await APIConnect.delete("/users/" + email + "/vehicles", {
@@ -120,6 +129,11 @@ export const DeleteVehicle = async ({ email, vin }) => {
       vin: vin,
     },
   });
+};
+
+// Get parts
+export const GetParts = async () => {
+  return await APIConnect.get("/parts");
 };
 
 export default APIConnect;

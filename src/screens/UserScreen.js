@@ -131,21 +131,23 @@ export default function UserScreen({ navigation }) {
             style={styles.btn}
             text="Add Vehicle"
             onPress={() => {
-              onClick();
+              navigation.navigate("AddVehicleScreen", {
+                userEmail: userData.email,
+              });
             }}
           />
           <BTN
             style={styles.btn}
             text="Service"
             onPress={() => {
-              onClick();
+              //onClick();
             }}
           />
           <BTN
             style={styles.btn}
             text="History"
             onPress={() => {
-              onClick();
+              // onClick();
             }}
           />
         </View>

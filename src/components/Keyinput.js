@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
   helper: {
     fontSize: 12,
     textAlign: "left",
-    color: "#000",
+    color: "red",
     opacity: 0.6,
     paddingTop: 8,
   },

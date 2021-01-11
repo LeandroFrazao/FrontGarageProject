@@ -2,61 +2,50 @@ import React from "react";
 
 import { useState, useEffect } from "react";
 import { StyleSheet, View, Text } from "react-native";
-import Keyinput from "../components/Keyinput";
+
 import Userinput from "../components/Userinput";
 import BTN from "../components/BTN";
-import {
-  Login,
-  UserEmail,
-  Register,
-  SaveStorage,
-  RemoveStorage,
-} from "../services/APIConnect";
+import DropDownPicker from "react-native-dropdown-picker";
+import { GetParts } from "../services/APIConnect";
+import DropList from "../components/DropList";
 
-function AddVehicleScreen({ navigation }) {
-  const [userData, setUserData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    city: "",
-    userType: "user",
-    key: "",
+export default function AddVehicleScreen({ navigation }) {
+  const [vehicleData, setVehicleData] = useState({
+    vin: "",
+    type: "",
+    make: "",
+    model: "",
+    engine: "",
+    year: "",
   });
+  const [vehicleMake, setVehicleMake] = useState([]);
+
+  const [vehicleEngine, setVehicleEngine] = useState([
+    { label: "Diesel", value: "diesel" },
+    { label: "Petrol", value: "petrol" },
+    { label: "Electric", value: "electric" },
+    { label: "Hybrid", value: "hybrid" },
+  ]);
+  const [vehicleType, setVehicleType] = useState([
+    { label: "Motorcycle", value: "Mmotorcycle" },
+    { label: "Car", value: "car" },
+    { label: "Van", value: "van" },
+    { label: "Bus", value: "bus" },
+  ]);
   const [helperData, setHelperData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    city: "",
-    key: "",
+    vin: "",
+    type: "",
+    make: "",
+    model: "",
+    engine: "",
+    year: "",
   });
 
-  const onSuccess = async ({ data }) => {
-    console.log("ON SUCCESS");
-    console.log(data);
-    //setUserToken(data.token);
-
-    await SaveStorage("userEmail", userData.email);
-    await SaveStorage("Error", data.user);
-
-    navigation.navigate("ConfirmationScreen", { userEmail: userData.email });
-
-    //RemoveStorage("Error", "");
-    //localStorage.setItem("user", JSON.stringify(data.token));
-
-    //setUserData(data);
-    return data;
-  };
   const onFailure = async (error) => {
     console.log(error);
     if (error && error.response) {
       console.log(error.response);
-      //console.log(error.response.data.error);
-      //console.log(error.response.data.Security);
-      //console.log(error && error.response);
       if (error.response.data.error) {
-        console.log("error 1");
         setHelperData({ ...helperData, email: error.response.data.error });
         //alert(error && error.response.data.error);
       } else if (error.response.data.Security) {
@@ -66,134 +55,195 @@ function AddVehicleScreen({ navigation }) {
     }
   };
 
+  // function to load parts from databe, and then get a list of unique models to an array.
+  const loadParts = () => {
+    // get all parts
+    GetParts()
+      .then((response) => {
+        console.log(response.data.parts);
+        let makes = [];
+        // add to models array, each model of vehicles found in the parts collection from database
+        response.data.parts.map((element, index) => {
+          makes.push(element.make);
+        });
+        makes = [...new Set(makes)]; // overwrite the array with unique elements/model.
+        console.log(makes);
+        let makesMap = [];
+        // create a map with label and value for each model to be used on drop list
+        makes.map((obj) => {
+          makesMap.push({
+            label: obj,
+            value: obj,
+          });
+        });
+        setVehicleMake(makesMap);
+      })
+      .catch(onFailure);
+  };
+
   useEffect(() => {
-    // Update the document title using the browser API
-  });
+    loadParts();
+  }, []);
 
   const validateData = ({ prop, item }) => {
     let toReturn = {};
+    let date = new Date();
+    let year = parseInt(date.getFullYear()) + 1;
+    let yearV = parseInt(prop);
+    console.log("year: " + year + " yearV: " + yearV);
     if (!prop && prop == "") {
-      toReturn = "Type your " + item;
-    } else if (item == "email") {
-      const emailValidator = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-      if (!emailValidator.test(prop)) {
-        toReturn = "Email invalid";
-      } else toReturn = "";
-    } else if (item != "email" && item != "key" && item != "phone") {
-      if (prop.length <= 4) {
+      toReturn = "Type the " + item;
+    } else if (item == "vin") {
+      if (prop.length <= 9) {
         toReturn = "Minimum 5 characters !";
       } else toReturn = "";
-    } else if (item == "phone" || item == "key") {
-      if (prop.length <= 5) {
-        toReturn = "Minimum 6 characters !";
+    } else if (item == "model") {
+      if (prop.length <= 2) {
+        toReturn = "Minimum 2 characters !";
+      } else toReturn = "";
+    } else if (item == "engine" || item == "type" || item == "make") {
+      if (prop.length > 0) {
+        toReturn = "";
+      }
+    } else if (item == "year") {
+      if (prop.length <= 4 || yearV >= 1920 || yearV <= year) {
+        toReturn = "Invalid Year";
       } else toReturn = "";
     }
-
     return toReturn;
   };
-
-  async function click({ name, email, phone, address, city, userType, key }) {
-    // console.log(email);
-    //console.log(userKey);
-    // let email = "bolivar@lgmail.com";
-    // let key = "123456";
-
+  function onclick({ vin, type, make, model, engine, year }) {
     let getValidation = {};
-    getValidation.email = validateData({ prop: email, item: "email" });
-    getValidation.name = validateData({ prop: name, item: "name" });
-    getValidation.phone = validateData({ prop: phone, item: "phone" });
-    getValidation.address = validateData({ prop: address, item: "address" });
-    getValidation.city = validateData({ prop: city, item: "city" });
-    getValidation.key = validateData({ prop: key, item: "key" });
+    getValidation.vin = validateData({ prop: vin, item: "vin" });
+    getValidation.model = validateData({ prop: model, item: "model" });
+    getValidation.year = validateData({ prop: year, item: "year" });
+    getValidation.type = validateData({ prop: type, item: "type" });
+    getValidation.engine = validateData({ prop: engine, item: "engine" });
+    getValidation.make = validateData({ prop: make, item: "make" });
+    console.log({ vin, type, make, model, engine, year });
     setHelperData({
-      name: getValidation.name,
-      email: getValidation.email,
-      phone: getValidation.phone,
-      address: getValidation.address,
-      city: getValidation.city,
-      key: getValidation.key,
+      vin: getValidation.vin,
+      model: getValidation.model,
+      year: getValidation.year,
+      make: getValidation.make,
+      type: getValidation.type,
+      engine: getValidation.engine,
     });
 
-    // console.log(helperData);
+    let email = navigation.state.params.userEmail;
+    console.log(getValidation);
     if (
-      getValidation.name == "" &&
-      getValidation.email == "" &&
-      getValidation.address == "" &&
-      getValidation.city == "" &&
-      getValidation.phone == "" &&
-      getValidation.key == ""
+      getValidation.vin == "" &&
+      getValidation.model == "" &&
+      getValidation.year == "" &&
+      getValidation.engine == "" &&
+      getValidation.type == "" &&
+      getValidation.make == ""
     ) {
-      Register({ name, email, phone, address, city, userType, key })
+      console.log("aqui 3");
+      console.log(vin, type, make, model, engine, year, email);
+      /*    AddVehicles({ vin, type, make, model, engine, year, email })
         .then(onSuccess)
-        .catch(onFailure);
+        .catch(onFailure);*/
     }
-  } /* 
-  <View style={styles.boxTitle}>
-          <Text style={styles.title}>Register</Text>
-        </View> */
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.bodyLogin}>
+        <View
+          style={
+            (styles.droplistView,
+            { paddingTop: 30, flexDirection: "row", zIndex: 10 })
+          }
+        >
+          <View>
+            <Text style={styles.textDroplist}>Type of Vehicle: </Text>
+            <Text style={styles.helper}>{helperData.type}</Text>
+            <DropList
+              items={vehicleType}
+              zIndex={1}
+              placeholder="Select the Type"
+              onChangeItem={(item) => {
+                setVehicleData({ ...vehicleData, type: item.value });
+              }}
+            />
+          </View>
+
+          <View>
+            <Text style={styles.textDroplist}>Make: </Text>
+            <Text style={styles.helper}>{helperData.make}</Text>
+            <DropList
+              items={vehicleMake}
+              zIndex={2}
+              placeholder="Select the Make"
+              onChangeItem={(item) => {
+                console.log(item),
+                  setVehicleData({ ...vehicleData, make: item.value });
+              }}
+            />
+          </View>
+        </View>
+
         <Userinput
           style={styles.styleTextBox1}
-          text="Email"
-          placeholder="Type your email"
-          onChange={(e) => setUserData({ ...userData, email: e })}
-          keyboardtype={"email-address"}
-          helperText={helperData.email} //to show errors
-        ></Userinput>
-        <Userinput
-          style={styles.styleTextBox1}
-          text="Name"
-          placeholder="Type your name"
-          onChange={(e) => setUserData({ ...userData, name: e })}
+          text="Model"
+          placeholder=".."
+          onChange={(e) => setVehicleData({ ...vehicleData, model: e })}
           keyboardtype={"default"}
-          helperText={helperData.name} //to show errors
+          helperText={helperData.model} //to show errors
         ></Userinput>
+        <View
+          style={
+            (styles.droplistView,
+            { paddingTop: 30, flexDirection: "row", zIndex: 8 })
+          }
+        >
+          <View>
+            <Text style={styles.textDroplist}>Engine: </Text>
+            <Text style={styles.helper}>{helperData.engine}</Text>
+
+            <DropList
+              items={vehicleEngine}
+              zIndex={3}
+              placeholder="Select the Engine"
+              onChangeItem={(item) => {
+                console.log(item),
+                  setVehicleData({ ...vehicleData, engine: item.value });
+              }}
+            />
+          </View>
+        </View>
+
         <Userinput
           style={styles.styleTextBox1}
-          text="Address"
-          placeholder="Type your address"
-          onChange={(e) => setUserData({ ...userData, address: e })}
+          text="Year"
+          placeholder=".."
+          onChange={(e) => setVehicleData({ ...vehicleData, year: e })}
           keyboardtype={"default"}
-          helperText={helperData.address} //to show errors
+          helperText={helperData.year} //to show errors
         ></Userinput>
         <Userinput
           style={styles.styleTextBox1}
-          text="City"
-          placeholder="Type your city"
-          onChange={(e) => setUserData({ ...userData, city: e })}
+          text="Vehicle Identification Number (VIN)"
+          placeholder=".."
+          onChange={(e) => setVehicleData({ ...vehicleData, vin: e })}
           keyboardtype={"default"}
-          helperText={helperData.city} //to show errors
-        ></Userinput>
-        <Userinput
-          style={styles.styleTextBox1}
-          text="Phone"
-          placeholder="Type your phone"
-          onChange={(e) => setUserData({ ...userData, phone: e })}
-          keyboardtype={"phone-pad"}
-          helperText={helperData.phone} //to show errors
+          helperText={helperData.vin} //to show errors
         ></Userinput>
 
-        <Keyinput
-          style={styles.styleTextBox2}
-          onChange={(e) => setUserData({ ...userData, key: e })}
-          keyboardtype={"default"}
-          helperText={helperData.key} //to show errors
-        ></Keyinput>
         <BTN
           style={styles.btn}
           text="Confirm"
           onPress={() => {
-            //  console.log(userLogin.key);
-            click({
-              email: userData.email,
-              name: userData.name,
-              phone: userData.phone,
-              address: userData.address,
-              city: userData.address,
-              key: userData.key,
-              userType: userData.userType,
+            // console.log(vehicleData);
+            onclick({
+              vin: vehicleData.vin,
+              make: vehicleData.make,
+              model: vehicleData.model,
+              type: vehicleData.type,
+              year: vehicleData.year,
+              engine: vehicleData.engine,
             });
           }}
         ></BTN>
@@ -241,6 +291,24 @@ const styles = StyleSheet.create({
     width: 100,
     marginTop: 30,
   },
-});
 
-export default AddVehicleScreen;
+  droplistView: {
+    paddingTop: 10,
+    paddingBottom: 50,
+  },
+
+  textDroplist: {
+    width: 100,
+    fontSize: 12,
+    marginTop: 5,
+    textAlign: "left",
+    paddingBottom: 5,
+  },
+  helper: {
+    fontSize: 12,
+    textAlign: "left",
+    color: "red",
+    opacity: 0.6,
+    //paddingVertical: 8,
+  },
+});

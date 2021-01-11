@@ -72,7 +72,7 @@ function RegisterScreen({ navigation }) {
     return toReturn;
   };
 
-  async function click({ name, email, phone, address, city, userType, key }) {
+  function click({ name, email, phone, address, city, userType, key }) {
     // console.log(email);
     //console.log(userKey);
     // let email = "bolivar@lgmail.com";
