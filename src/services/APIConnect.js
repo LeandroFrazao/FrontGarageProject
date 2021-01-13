@@ -3,8 +3,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Create axios client, pre-configured with baseURL
 export const APIConnect = axios.create({
-  baseURL: "https://tranquil-coast-47648.herokuapp.com",
-  //baseURL: "http://localhost:3000",
+  //baseURL: "https://tranquil-coast-47648.herokuapp.com",
+  baseURL: "http://localhost:3000",
 
   timeout: 100000,
 });
@@ -101,6 +101,13 @@ export const GetVehicles = async (email) => {
 export const GetUserVehicles = async (email) => {
   return await APIConnect.get("/users/" + email + "/vehicles");
 };
+
+// to capitalize the first letter of the string
+const upperFirstLetter = (props) => {
+  props = props.substr(0, 1).toUpperCase() + props.substr(1, props.length);
+  return props;
+};
+
 // Add user vehicles
 export const AddVehicles = async ({
   vin,
@@ -111,7 +118,32 @@ export const AddVehicles = async ({
   year,
   email,
 }) => {
+  model = model.toUpperCase();
+  make = upperFirstLetter(make);
   return await APIConnect.post("/vehicles", {
+    vin,
+    type,
+    make,
+    model,
+    engine,
+    year,
+    email,
+  });
+};
+// Update user vehicle
+export const UpdateVehicle = async ({
+  vin,
+  type,
+  make,
+  model,
+  engine,
+  year,
+  email,
+}) => {
+  console.log(email);
+  model = model.toUpperCase();
+  make = upperFirstLetter(make);
+  return await APIConnect.put("/users/" + email + "/vehicles/" + vin, {
     vin,
     type,
     make,
@@ -134,6 +166,54 @@ export const DeleteVehicle = async ({ email, vin }) => {
 // Get parts
 export const GetParts = async () => {
   return await APIConnect.get("/parts");
+};
+// Add parts
+export const AddParts = async ({
+  slug: slug,
+  partName: partName,
+  cost: cost,
+  category: category,
+  make: make,
+  model: model,
+}) => {
+  return await APIConnect.post("/parts", {
+    slug,
+    partName,
+    cost,
+    category,
+    make,
+    model,
+  });
+};
+// Update part
+export const UpdatePart = async ({
+  slug: slug,
+  partName: partName,
+  cost: cost,
+  category: category,
+  make: make,
+  model: model,
+}) => {
+  console.log(email);
+  model = model.toUpperCase();
+  make = upperFirstLetter(make);
+  return await APIConnect.put("/part/" + slug, {
+    slug,
+    partName,
+    cost,
+    category,
+    make,
+    model,
+  });
+};
+// Delete part
+export const DeletePart = async ({ slug }) => {
+  console.log(slug);
+  return await APIConnect.delete("/parts/" + slug, {
+    data: {
+      slug: slug,
+    },
+  });
 };
 
 export default APIConnect;

@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import { StyleSheet, View, Text, TextInput } from "react-native";
 
-function Keyinput({ style, onChange, helperText }) {
+function Keyinput({ style, onChange, helperText, maxLength }) {
   return (
     <View style={[styles.container, style]}>
       <Text style={styles.label}>Password</Text>
@@ -9,6 +9,7 @@ function Keyinput({ style, onChange, helperText }) {
         placeholder="Type your password"
         style={styles.inputStyle}
         onChangeText={onChange}
+        maxLength={maxLength}
         secureTextEntry
       ></TextInput>
       <Text style={styles.helper}>{helperText}</Text>

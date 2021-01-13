@@ -7,6 +7,8 @@ import RegisterScreen from "./src/screens/RegisterScreen.js";
 import ConfirmationScreen from "./src/screens/ConfirmationScreen.js";
 import AdminScreen from "./src/screens/AdminScreen.js";
 import AddVehicleScreen from "./src/screens/AddVehicleScreen.js";
+import UpdateVehicleScreen from "./src/screens/UpdateVehicleScreen.js";
+import PartsScreen from "./src/screens/PartsScreen.js";
 
 const navigator = createStackNavigator(
   {
@@ -37,6 +39,14 @@ const navigator = createStackNavigator(
     AddVehicleScreen: {
       screen: AddVehicleScreen,
       navigationOptions: { title: "Add Vehicle" },
+    },
+    UpdateVehicleScreen: {
+      screen: UpdateVehicleScreen,
+      navigationOptions: { title: "Edit Vehicle" },
+    },
+    PartsScreen: {
+      screen: PartsScreen,
+      navigationOptions: { title: "Parts" },
     },
   },
 

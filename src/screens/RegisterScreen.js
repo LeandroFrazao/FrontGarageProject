@@ -28,9 +28,7 @@ function RegisterScreen({ navigation }) {
 
   const onSuccess = async ({ data }) => {
     console.log("ON SUCCESS");
-    console.log(data);
-    //setUserToken(data.token);
-
+    //console.log(data);
     navigation.navigate("ConfirmationScreen", { userEmail: userData.email });
 
     return data;
@@ -41,11 +39,18 @@ function RegisterScreen({ navigation }) {
       console.log(error.response);
       if (error.response.data.error) {
         console.log("error 1");
-        setHelperData({ ...helperData, email: error.response.data.error });
-        //alert(error && error.response.data.error);
+        setHelperData({
+          ...helperData,
+          email: error.response.data.error,
+          name: "",
+
+          phone: "",
+          address: "",
+          city: "",
+          key: "",
+        });
       } else if (error.response.data.Security) {
         console.log(error.response.data.Security);
-        //alert(error && error.response.data.Security);
       }
     }
   };
@@ -117,6 +122,7 @@ function RegisterScreen({ navigation }) {
         <Userinput
           style={styles.styleTextBox1}
           text="Email"
+          maxLength={25}
           placeholder="Type your email"
           onChange={(e) => setUserData({ ...userData, email: e })}
           keyboardtype={"email-address"}
@@ -125,6 +131,7 @@ function RegisterScreen({ navigation }) {
         <Userinput
           style={styles.styleTextBox1}
           text="Name"
+          maxLength={30}
           placeholder="Type your name"
           onChange={(e) => setUserData({ ...userData, name: e })}
           keyboardtype={"default"}
@@ -133,6 +140,7 @@ function RegisterScreen({ navigation }) {
         <Userinput
           style={styles.styleTextBox1}
           text="Address"
+          maxLength={35}
           placeholder="Type your address"
           onChange={(e) => setUserData({ ...userData, address: e })}
           keyboardtype={"default"}
@@ -141,6 +149,7 @@ function RegisterScreen({ navigation }) {
         <Userinput
           style={styles.styleTextBox1}
           text="City"
+          maxLength={15}
           placeholder="Type your city"
           onChange={(e) => setUserData({ ...userData, city: e })}
           keyboardtype={"default"}
@@ -149,6 +158,7 @@ function RegisterScreen({ navigation }) {
         <Userinput
           style={styles.styleTextBox1}
           text="Phone"
+          maxLength={12}
           placeholder="Type your phone"
           onChange={(e) => setUserData({ ...userData, phone: e })}
           keyboardtype={"phone-pad"}
@@ -157,6 +167,7 @@ function RegisterScreen({ navigation }) {
 
         <Keyinput
           style={styles.styleTextBox2}
+          maxLength={15}
           onChange={(e) => setUserData({ ...userData, key: e })}
           keyboardtype={"default"}
           helperText={helperData.key} //to show errors
@@ -207,13 +218,13 @@ const styles = StyleSheet.create({
   styleTextBox1: {
     height: 74,
     width: 275,
-    marginTop: 5,
+    marginTop: 8,
     marginLeft: 43,
   },
   styleTextBox2: {
     height: 74,
     width: 275,
-    marginTop: 5,
+    marginTop: 8,
     marginLeft: 43,
   },
   btn: {

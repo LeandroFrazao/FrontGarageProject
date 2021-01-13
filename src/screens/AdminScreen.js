@@ -63,8 +63,10 @@ export default function UserScreen({ navigation }) {
     getStorage();
   }, []);
 
-  function onClick() {
-    // UserEmail("bolivar@lgmail.com").then(onSuccess).catch(onFailure);
+  function PartsClick() {
+    navigation.navigate("PartsScreen", {
+      // userEmail: userData.email,
+    });
   }
 
   return (
@@ -77,21 +79,21 @@ export default function UserScreen({ navigation }) {
         <View style={styles.buttons}>
           <BTN
             style={styles.btn}
-            text="Add Vehicle"
+            text="Users"
             onPress={() => {
               onClick();
             }}
           ></BTN>
           <BTN
             style={styles.btn}
-            text="Service"
+            text="Parts"
             onPress={() => {
-              onClick();
+              PartsClick();
             }}
           ></BTN>
           <BTN
             style={styles.btn}
-            text="History"
+            text="Invoices"
             onPress={
               () => {
                 onClick();
@@ -114,19 +116,19 @@ const styles = StyleSheet.create({
     marginTop: 39,
   },
   body: {
-    //flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 20,
+    alignContent: "center",
+    // paddingVertical: 20,
   },
   boxTitle: {
-    marginTop: 100,
     backgroundColor: "#E6E6E6",
     width: "100%",
-    height: 150,
+    height: 80,
     alignItems: "center",
     justifyContent: "center",
   },
+
   title: {
     fontFamily: "Roboto",
     color: "rgba(31,31,78,1)",
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
   },
   btn: {
     height: 30,
-    width: 105,
+    width: 110,
     backgroundColor: "rgba(85,83,208,1)",
     //  marginTop: 20,
     //marginLeft: 115,

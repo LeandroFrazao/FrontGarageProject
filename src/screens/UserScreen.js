@@ -1,6 +1,8 @@
 import React, { Component } from "react";
 import { useState, useEffect } from "react";
 import { StyleSheet, View, Text, Alert, Platform } from "react-native";
+import { NavigationEvents } from "react-navigation";
+
 import Header from "../components/HeaderScreen";
 
 import BTN from "../components/BTN";
@@ -29,14 +31,12 @@ export default function UserScreen({ navigation }) {
       if (error.response.data.error) {
         setHelperData({ ...helperData, msg: "No Vehicles" });
       } else console.log(error && error.response.data.Security);
-      //alert(error && error.response.data.Security);
     }
   };
 
   // Load user data that was passed by params from navigation
   const loadUserData = () => {
     try {
-      let userEmail = navigation.state.params.userEmail;
       let data = navigation.state.params.userData;
       setUserData({
         name: data.name,
@@ -46,40 +46,58 @@ export default function UserScreen({ navigation }) {
         city: data.city,
         key: data.key,
       });
-      console.log(userEmail);
     } catch (e) {
       console.log(e);
     }
   };
+
   const loadUserVehicles = () => {
-    GetUserVehicles()
+    let userEmail = navigation.state.params.userEmail;
+    //console.log("loaduserVehicles " + userEmail);
+    GetUserVehicles(userEmail)
       .then((response) => {
         console.log(response);
         console.log(response.data.users[0]);
         let vehicles = [];
         vehicles = response.data.users[0].vehicles;
         console.log(vehicles);
+        console.log(userData);
+
         setVehicleData((vehicleData) => vehicleData.concat(vehicles));
       })
       .catch(onFailure);
   };
 
   useEffect(() => {
-    loadUserVehicles();
+    //loadUserVehicles();
+    console.log("usereffect");
+
     loadUserData();
   }, []);
 
-  const deleteVehicle = ({ vin }) => {
+  const deleteVehicle = async ({ vin }) => {
     console.log(vin + " deleted");
-    setVehicleData(vehicleData.filter((element) => element.vin !== vin));
-    /* await DeleteVehicle({ email: userData.email, vin: vin })
-    .then((result) => {
-      setVehicleData( vehicleData.filter(element => element.vin !== vin))
-      console.log(result);
-    })
-    .catch(onFailure); */
+    await DeleteVehicle({ email: userData.email, vin: vin })
+      .then((result) => {
+        setVehicleData(vehicleData.filter((element) => element.vin !== vin));
+        console.log(result);
+      })
+      .catch(onFailure);
   };
-  const DelClick = async ({ vin }) => {
+
+  const AddVehicle = () => {
+    navigation.navigate("AddVehicleScreen", {
+      userEmail: userData.email,
+    });
+  };
+
+  const EditClick = (index) => {
+    navigation.navigate("UpdateVehicleScreen", {
+      vehicle: vehicleData[index],
+    });
+  };
+
+  const DelClick = ({ vin }) => {
     if (Platform.OS == "web") {
       if (confirm("Confirm to delete Vehicle: " + vin + " ?")) {
         deleteVehicle({ vin: vin });
@@ -95,7 +113,7 @@ export default function UserScreen({ navigation }) {
           },
           {
             text: "OK",
-            onPress: async () => {
+            onPress: () => {
               deleteVehicle({ vin: vin });
             },
           },
@@ -103,18 +121,22 @@ export default function UserScreen({ navigation }) {
         { cancelable: false }
       );
     }
-
-    /* */
   };
-  /* <Text style={styles.details}>
-                  Type: {element.type}
-                  Make: {element.make}
-                  Model:{element.model}
-                  Engine: {element.engine}
-                  Year: {element.year}
-                </Text> */
+
   return (
     <View style={styles.container}>
+      <NavigationEvents
+        onWillFocus={() => {
+          console.log("will Focus");
+
+          loadUserVehicles();
+        }}
+        onWillBlur={() => {
+          console.log("will blur");
+
+          setVehicleData([]);
+        }}
+      />
       <View style={styles.body}>
         <View style={styles.boxTitle}>
           <Text style={styles.title}>Welcome</Text>
@@ -131,9 +153,7 @@ export default function UserScreen({ navigation }) {
             style={styles.btn}
             text="Add Vehicle"
             onPress={() => {
-              navigation.navigate("AddVehicleScreen", {
-                userEmail: userData.email,
-              });
+              AddVehicle();
             }}
           />
           <BTN
@@ -178,8 +198,8 @@ export default function UserScreen({ navigation }) {
                         <Text style={styles.vehicleText}>
                           {" "}
                           Model: {element.model}
-                          {"      "}Year: {element.year}
-                          {"      "}VIN: {element.vin}
+                          {"    "}Year: {element.year}
+                          {"    "}VIN: {element.vin}
                         </Text>
                       </View>
                       <View>
@@ -188,7 +208,7 @@ export default function UserScreen({ navigation }) {
                           styleCaption={styles.smallBtnText}
                           text="Edit"
                           onPress={() => {
-                            // EditClick();
+                            EditClick(index);
                           }}
                         ></BTN>
 

@@ -5,11 +5,12 @@ import { StyleSheet, View, Text } from "react-native";
 
 import Userinput from "../components/Userinput";
 import BTN from "../components/BTN";
-import DropDownPicker from "react-native-dropdown-picker";
-import { GetParts, AddVehicles } from "../services/APIConnect";
-import DropList from "../components/DropList";
 
-export default function AddVehicleScreen({ navigation }) {
+import { GetParts, UpdateVehicle } from "../services/APIConnect";
+import DropList from "../components/DropList";
+import { NavigationEvents } from "react-navigation";
+
+export default function UpdateVehicleScreen({ navigation }) {
   const [vehicleData, setVehicleData] = useState({
     vin: "",
     type: "",
@@ -27,7 +28,7 @@ export default function AddVehicleScreen({ navigation }) {
     { label: "Hybrid", value: "hybrid" },
   ]);
   const [vehicleType, setVehicleType] = useState([
-    { label: "Motorcycle", value: "Mmotorcycle" },
+    { label: "Motorcycle", value: "motorcycle" },
     { label: "Car", value: "car" },
     { label: "Van", value: "van" },
     { label: "Bus", value: "bus" },
@@ -67,19 +68,19 @@ export default function AddVehicleScreen({ navigation }) {
     }
   };
 
-  // function to load parts from databe, and then get a list of unique models to an array.
+  // function to load parts from databe, and then get a list of unique makes to an array.
   const loadParts = () => {
     // get all parts
     GetParts()
       .then((response) => {
-        console.log(response.data.parts);
+        //  console.log(response.data.parts);
         let makes = [];
         // add to models array, each model of vehicles found in the parts collection from database
         response.data.parts.map((element) => {
           makes.push(element.make);
         });
         makes = [...new Set(makes)]; // overwrite the array with unique elements/model.
-        console.log(makes);
+        //  console.log(makes);
         let makesMap = [];
         // create a map with label and value for each model to be used on drop list
         makes.map((obj) => {
@@ -93,8 +94,23 @@ export default function AddVehicleScreen({ navigation }) {
       .catch(onFailure);
   };
 
+  const loadVehicle = () => {
+    let vehicle = navigation.state.params.vehicle;
+    setVehicleMake([{ label: vehicle.make, value: vehicle.make }]);
+    setVehicleData({
+      email: vehicle.email,
+      vin: vehicle.vin,
+      type: vehicle.type,
+      make: vehicle.make,
+      model: vehicle.model,
+      engine: vehicle.engine,
+      year: vehicle.year,
+    });
+  };
+  // To load data on screen
   useEffect(() => {
     loadParts();
+    loadVehicle();
   }, []);
 
   const validateData = ({ prop, item }) => {
@@ -120,6 +136,7 @@ export default function AddVehicleScreen({ navigation }) {
       let date = new Date();
       let year = parseInt(date.getFullYear()) + 1;
       let yearV = parseInt(prop);
+
       //check if year is valid with minimun year of 1920 and max of the current year + 1
       if (prop.length < 4 || yearV < 1920 || yearV > year) {
         toReturn = "Invalid Year";
@@ -146,8 +163,8 @@ export default function AddVehicleScreen({ navigation }) {
       engine: getValidation.engine,
     });
 
-    let email = navigation.state.params.userEmail;
-    console.log(getValidation);
+    let email = navigation.state.params.vehicle.email;
+    console.log(navigation.state.params);
     if (
       getValidation.vin == "" &&
       getValidation.model == "" &&
@@ -156,7 +173,7 @@ export default function AddVehicleScreen({ navigation }) {
       getValidation.type == "" &&
       getValidation.make == ""
     ) {
-      AddVehicles({ vin, type, make, model, engine, year, email })
+      UpdateVehicle({ vin, type, make, model, engine, year, email })
         .then((response) => {
           console.log(response);
 
@@ -177,13 +194,22 @@ export default function AddVehicleScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      <NavigationEvents
+        onWillFocus={() => {
+          console.log("will Focus");
+          // let vehicle = navigation.state.params.vehicle;
+          //  setVehicleMake([{ label: vehicle.make, value: vehicle.make }]);
+          // loadParts();
+        }}
+      />
       <View style={styles.bodyLogin}>
         <View
           style={[
             styles.viewStyle,
             {
               flexDirection: "row",
-
+              borderColor: "yellow",
+              borderWidth: 2,
               zIndex: 20,
             },
           ]}
@@ -194,6 +220,7 @@ export default function AddVehicleScreen({ navigation }) {
             items={vehicleType}
             style={[styles.dropListStyle, { paddingRight: 5 }]}
             placeholder="Select the Type"
+            defaultValue={vehicleData.type}
             onChangeItem={(item) => {
               setVehicleData({ ...vehicleData, type: item.value });
             }}
@@ -211,6 +238,7 @@ export default function AddVehicleScreen({ navigation }) {
             items={vehicleMake}
             style={[styles.dropListStyle, { paddingLeft: 5 }]}
             placeholder="Select the Make"
+            defaultValue={vehicleData.make}
             onChangeItem={(item) => {
               console.log(item),
                 setVehicleData({ ...vehicleData, make: item.value });
@@ -229,6 +257,8 @@ export default function AddVehicleScreen({ navigation }) {
           style={[
             styles.viewStyle,
             {
+              borderColor: "yellow",
+              borderWidth: 2,
               flexDirection: "row",
               zIndex: 19,
             },
@@ -240,6 +270,7 @@ export default function AddVehicleScreen({ navigation }) {
             maxLength={10}
             text="Model"
             placeholder="Model"
+            value={vehicleData.model}
             onChange={(e) => setVehicleData({ ...vehicleData, model: e })}
             keyboardtype={"default"}
             helperText={helperData.model} //to show errors
@@ -251,6 +282,7 @@ export default function AddVehicleScreen({ navigation }) {
             items={vehicleEngine}
             style={styles.dropListStyle}
             placeholder="Select the Engine"
+            defaultValue={vehicleData.engine}
             onChangeItem={(item) => {
               console.log(item),
                 setVehicleData({ ...vehicleData, engine: item.value });
@@ -268,6 +300,8 @@ export default function AddVehicleScreen({ navigation }) {
           style={[
             styles.viewStyle,
             {
+              borderColor: "yellow",
+              borderWidth: 2,
               flexDirection: "row",
               zIndex: 8,
             },
@@ -279,6 +313,7 @@ export default function AddVehicleScreen({ navigation }) {
             maxLength={4}
             text="Year"
             placeholder="Year"
+            value={vehicleData.year}
             onChange={(e) => setVehicleData({ ...vehicleData, year: e })}
             keyboardtype={"default"}
             helperText={helperData.year} //to show errors
@@ -289,6 +324,7 @@ export default function AddVehicleScreen({ navigation }) {
             maxLength={10}
             text="Vehicle Identification Number"
             placeholder="VIN"
+            value={vehicleData.vin}
             onChange={(e) => setVehicleData({ ...vehicleData, vin: e })}
             keyboardtype={"default"}
             helperText={helperData.vin} //to show errors
@@ -323,6 +359,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 5,
+    //   marginTop: -80,
   },
   boxTitle: {
     backgroundColor: "#E6E6E6",
@@ -338,7 +375,16 @@ const styles = StyleSheet.create({
   },
   styleTextBox1: {
     height: 74,
+
+    //width: 275,
     marginTop: 5,
+    //  marginLeft: 43,
+  },
+  styleTextBox2: {
+    height: 74,
+    // width: 275,
+    marginTop: 5,
+    //  marginLeft: 43,
   },
   btn: {
     height: 36,
@@ -349,10 +395,19 @@ const styles = StyleSheet.create({
   dropListStyle: {
     height: 100,
     fontSize: 12,
+    //paddingBottom: 50,
+    // borderColor: "red",
+    //borderWidth: 2,
+    //  height: 100,
   },
 
   viewStyle: {
     paddingTop: 20,
+    //height: 100,
+    //fontSize: 12,
+    // marginTop: 5,
+    // textAlign: "left",
+    // paddingTop: 10,
   },
   helper: {
     fontSize: 12,
@@ -361,5 +416,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     borderColor: "red",
     borderWidth: 2,
+
+    // paddingBottom: 20,
   },
 });

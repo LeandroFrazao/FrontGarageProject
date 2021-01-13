@@ -8,15 +8,20 @@ function Userinput({
   onChange,
   helperText,
   keyboardtype,
+  styleInput,
+  maxLength,
+  value,
 }) {
   return (
     <View style={[styles.container, style]}>
       <Text style={styles.label}>{text}</Text>
       <TextInput
         placeholder={placeholder} //"Type your email"
-        style={styles.inputStyle}
+        style={[styles.inputStyle, styleInput]}
+        maxLength={maxLength}
         onChangeText={onChange}
         keyboardType={keyboardtype}
+        value={value}
       ></TextInput>
       <Text style={styles.helper}>{helperText}</Text>
     </View>
@@ -37,6 +42,7 @@ const styles = StyleSheet.create({
   inputStyle: {
     borderBottomWidth: 1,
     borderColor: "#D9D5DC",
+
     color: "#000",
     fontSize: 16,
     alignSelf: "stretch",
