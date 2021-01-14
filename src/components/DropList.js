@@ -12,6 +12,7 @@ function DropList({
   containerStyle,
   helperStyle,
   label,
+  styleLabel,
   helperText,
   onOpen,
   onClose,
@@ -23,7 +24,7 @@ function DropList({
 }) {
   return (
     <View style={[styles.container, style]}>
-      <Text style={styles.label}>{label} </Text>
+      <Text style={[styles.label, styleLabel]}>{label} </Text>
       <DropDownPicker
         items={items}
         placeholder={placeholder}

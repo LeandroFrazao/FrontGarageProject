@@ -7,6 +7,7 @@ function Userinput({
   style,
   onChange,
   helperText,
+  styleHelper,
   keyboardtype,
   styleInput,
   maxLength,
@@ -23,7 +24,7 @@ function Userinput({
         keyboardType={keyboardtype}
         value={value}
       ></TextInput>
-      <Text style={styles.helper}>{helperText}</Text>
+      <Text style={[styles.helper, styleHelper]}>{helperText}</Text>
     </View>
   );
 }

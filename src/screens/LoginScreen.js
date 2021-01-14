@@ -85,7 +85,7 @@ export default function LoginScreen({ navigation }) {
   async function click({ email, key }) {
     // let email = "bolivar@lgmail.com";
     // let key = "123456";
-    email = "leandrofrazao@hotmail.com";
+    email = "leandrofrazao@hotmail.com"; /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //email = "bolivar@lgmail.com";
     //email = "hulk@marvel.com";
     key = "123456";

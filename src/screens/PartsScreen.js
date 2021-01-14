@@ -71,7 +71,7 @@ export default function PartsScreen({ navigation }) {
           model: "",
           cost: "",
           partName: "",
-          partName2: "Part registered already!",
+          partName2: error.response.data.error,
         });
       } else if (error.response.data.Security) {
         console.log(error.response.data.Security);
@@ -85,7 +85,7 @@ export default function PartsScreen({ navigation }) {
     GetParts()
       .then((response) => {
         //  console.log(response.data.parts);
-        console.log(response);
+        // console.log(response);
         let makes = [];
         let models = [];
         let categories = [];
@@ -116,32 +116,108 @@ export default function PartsScreen({ navigation }) {
             value: obj,
           });
         });
-        models.map((obj) => {
-          modelMap.push({
-            label: obj,
-            value: obj,
-          });
-        });
+
         categories.map((obj) => {
           categoryMap.push({
             label: obj,
             value: obj,
           });
         });
-        partNames.map((obj) => {
-          partNameMap.push({
-            label: obj,
-            value: obj,
+
+        if (partsModel.length == 0) {
+          models.map((obj) => {
+            modelMap.push({
+              label: obj,
+              value: obj,
+            });
           });
-        });
+          setPartsModel(
+            modelMap.sort((a, b) =>
+              a.value < b.value ? -1 : a.value > b.value ? 1 : 0
+            )
+          );
+        } else loadDropListModels(partsData.make);
+
+        if (partsName.length == 0) {
+          partNames.map((obj) => {
+            partNameMap.push({
+              label: obj,
+              value: obj,
+            });
+          });
+          setPartsName(
+            partNameMap.sort((a, b) =>
+              a.value < b.value ? -1 : a.value > b.value ? 1 : 0
+            )
+          );
+        } else loadDropListPartNames(partsData.category);
+
         setPartsCollection((partsCollection) => partsCollection.concat(parts));
         setPartsMake(makesMap);
-        setPartsModel(modelMap);
-        setPartsCategory(categoryMap);
-        setPartsName(partNameMap);
-        console.log(makesMap, modelMap, categoryMap, partNameMap);
+
+        setPartsCategory(
+          categoryMap.sort((a, b) =>
+            a.value < b.value ? -1 : a.value > b.value ? 1 : 0
+          )
+        );
+
+        //console.log(makesMap, modelMap, categoryMap, partNameMap);
       })
       .catch(onFailure);
+  };
+
+  //to load models in the droplist associated to a chosen make
+  const loadDropListModels = (value) => {
+    let result = partsCollection.filter(
+      (element, index) =>
+        index ===
+        partsCollection.findIndex(
+          (obj) => element.make == value && element.model == obj.model
+        )
+    );
+    let modelMap = [];
+    result.map((obj) => {
+      modelMap.push({
+        label: obj.model,
+        value: obj.model,
+      });
+    });
+    setPartsModel(
+      modelMap.sort((a, b) =>
+        a.value < b.value ? -1 : a.value > b.value ? 1 : 0
+      )
+    );
+  };
+
+  //to load parts names in the droplist associated to a chosen category
+  const loadDropListPartNames = (value) => {
+    //filter partnames and remove duplicates.
+    let result = partsCollection.filter(
+      (element, index) =>
+        index ===
+        partsCollection.findIndex(
+          (obj) => element.category == value && element.partName == obj.partName
+        )
+    );
+    /* (ele, ind) =>
+  ind ===
+  arr.findIndex((elem) => elem.jobid === ele.jobid && elem.id === ele.id);
+ */
+
+    console.log(result);
+    let partNameMap = [];
+    result.map((obj) => {
+      partNameMap.push({
+        label: obj.partName,
+        value: obj.partName,
+      });
+    });
+    console.log(partNameMap);
+    setPartsName(
+      partNameMap.sort((a, b) =>
+        a.value < b.value ? -1 : a.value > b.value ? 1 : 0
+      )
+    );
   };
 
   // To load data on screen
@@ -204,9 +280,27 @@ export default function PartsScreen({ navigation }) {
     }
   }
 
-  const UpdatePart = async ({ slug }) => {
-    setBtnOption({ add: true, update: false });
-    /* await UpdatePart({ slug })
+  const CleanClick = () => {
+    setPartsData({ category: "", make: "", model: "", cost: "", partName: "" });
+    setHelperData({
+      ...helperData,
+      category: "",
+      make: "",
+      model: "",
+      cost: "",
+      partName: "",
+    });
+  };
+  // update part
+  const UpdateClick = async ({
+    slug,
+    category,
+    cost,
+    model,
+    make,
+    partName,
+  }) => {
+    await UpdatePart({ slug, category, cost, model, make, partName })
       .then((result) => {
         console.log(result);
         setBtnOption({ add: true, update: false });
@@ -214,7 +308,7 @@ export default function PartsScreen({ navigation }) {
 
         loadPartsCollection();
       })
-      .catch(onFailure); */
+      .catch(onFailure);
   };
 
   const EditClick = async (index) => {
@@ -227,6 +321,7 @@ export default function PartsScreen({ navigation }) {
       model: partsCollection[index].model,
       cost: partsCollection[index].cost,
       partName: partsCollection[index].partName,
+      slug: partsCollection[index].slug,
     });
   };
   const deletePart = async ({ slug }) => {
@@ -279,7 +374,7 @@ export default function PartsScreen({ navigation }) {
         }}
       />
 
-      <View style={styles.bodyLogin}>
+      <View style={styles.bodyParts}>
         <View
           style={[
             styles.viewStyle,
@@ -293,8 +388,9 @@ export default function PartsScreen({ navigation }) {
         >
           <Userinput
             style={[styles.styleTextBox1, { paddingRight: 10 }]}
-            styleInput={{ width: 100 }}
-            maxLength={10}
+            styleInput={[styles.styleInput]}
+            styleHelper={styles.styleHelperInput}
+            maxLength={16}
             text="Category"
             placeholder="Category"
             value={partsData.category}
@@ -305,7 +401,8 @@ export default function PartsScreen({ navigation }) {
 
           <Userinput
             style={[styles.styleTextBox1, { paddingRight: 10 }]}
-            styleInput={{ width: 100 }}
+            styleInput={[styles.styleInput]}
+            styleHelper={styles.styleHelperInput}
             maxLength={10}
             text="Make"
             placeholder="Make"
@@ -317,7 +414,8 @@ export default function PartsScreen({ navigation }) {
 
           <Userinput
             style={[styles.styleTextBox1, { paddingRight: 0 }]}
-            styleInput={{ width: 100 }}
+            styleInput={[styles.styleInput]}
+            styleHelper={styles.styleHelperInput}
             maxLength={10}
             text="Model"
             placeholder="Model"
@@ -342,10 +440,12 @@ export default function PartsScreen({ navigation }) {
             //helperText={helperData.category}
             items={partsCategory}
             containerStyle={[styles.styleDropdown]}
+            styleLabel={styles.styleLabelDropDown}
             style={[styles.dropListStyle, { paddingRight: 10 }]}
             placeholder="Categoy"
             onChangeItem={(item) => {
               setPartsData({ ...partsData, category: item.value });
+              loadDropListPartNames(item.value);
             }}
             isVisible={dropList.isVisibleCategory}
             onOpen={() => changeVisibility({ isVisibleCategory: true })}
@@ -361,9 +461,11 @@ export default function PartsScreen({ navigation }) {
             items={partsMake}
             style={[styles.dropListStyle, { paddingRight: 10 }]}
             containerStyle={[styles.styleDropdown]}
+            styleLabel={styles.styleLabelDropDown}
             placeholder="Make"
             onChangeItem={(item) => {
               setPartsData({ ...partsData, make: item.value });
+              loadDropListModels(item.value);
             }}
             isVisible={dropList.isVisibleMake}
             onOpen={() => changeVisibility({ isVisibleMake: true })}
@@ -377,8 +479,9 @@ export default function PartsScreen({ navigation }) {
             label=""
             //helperText={helperData.category}
             items={partsModel}
-            style={[styles.dropListStyle, { paddingRight: 10 }]}
+            style={[styles.dropListStyle, { paddingRight: 0 }]}
             containerStyle={[styles.styleDropdown]}
+            styleLabel={styles.styleLabelDropDown}
             placeholder="Model"
             onChangeItem={(item) => {
               setPartsData({ ...partsData, model: item.value });
@@ -399,14 +502,15 @@ export default function PartsScreen({ navigation }) {
             {
               flexDirection: "row",
               zIndex: 18,
-              paddingTop: 50,
+              paddingTop: 40,
             },
           ]}
         >
           <Userinput
             style={[styles.styleTextBox1, { paddingRight: 30 }]}
-            styleInput={{ width: 100 }}
-            maxLength={10}
+            styleInput={[styles.styleInput]}
+            styleHelper={styles.styleHelperInput}
+            maxLength={16}
             text="Part Name"
             placeholder="Part Name"
             value={partsData.partName}
@@ -416,9 +520,10 @@ export default function PartsScreen({ navigation }) {
           ></Userinput>
           <Userinput
             style={[styles.styleTextBox1, { paddingRight: 0 }]}
-            styleInput={{ width: 100 }}
+            styleInput={[styles.styleInput]}
+            styleHelper={styles.styleHelperInput}
             maxLength={10}
-            text="Cost"
+            text="Cost €"
             placeholder="Cost"
             value={partsData.cost}
             onChange={(e) => setPartsData({ ...partsData, cost: e })}
@@ -431,7 +536,7 @@ export default function PartsScreen({ navigation }) {
             styles.viewStyle,
             {
               flexDirection: "row",
-              zIndex: 8,
+              zIndex: 17,
             },
           ]}
         >
@@ -441,6 +546,7 @@ export default function PartsScreen({ navigation }) {
             items={partsName}
             style={[styles.dropListStyle, { paddingRight: 120 }]}
             containerStyle={[styles.styleDropdown]}
+            styleLabel={styles.styleLabelDropDown}
             helperStyle={styles.helperStyle}
             placeholder="Part name"
             onChangeItem={(item) => {
@@ -455,29 +561,52 @@ export default function PartsScreen({ navigation }) {
             }
           />
         </View>
-
-        <BTN
-          style={styles.btn}
-          text={btnOption.add == true ? "Add new Part" : "Update Part"}
-          onPress={() => {
-            btnOption.add
-              ? AddClick({
-                  category: partsData.category,
-                  make: partsData.make,
-                  model: partsData.model,
-                  cost: partsData.cost,
-                  partName: partsData.partName,
-                })
-              : UpdatePart({ slug: partsData.slug });
-          }}
-        ></BTN>
+        <View
+          style={[
+            styles.viewStyle,
+            {
+              flexDirection: "row",
+              zIndex: 16,
+            },
+          ]}
+        >
+          <BTN
+            style={styles.btn}
+            text={btnOption.add == true ? "Add" : "Update"}
+            onPress={() => {
+              btnOption.add
+                ? AddClick({
+                    category: partsData.category,
+                    make: partsData.make,
+                    model: partsData.model,
+                    cost: partsData.cost,
+                    partName: partsData.partName,
+                  })
+                : UpdateClick({
+                    category: partsData.category,
+                    make: partsData.make,
+                    model: partsData.model,
+                    cost: partsData.cost,
+                    partName: partsData.partName,
+                    slug: partsData.slug,
+                  });
+            }}
+          ></BTN>
+          <BTN
+            style={styles.btn}
+            text="Clean"
+            onPress={() => {
+              CleanClick();
+            }}
+          ></BTN>
+        </View>
       </View>
-      <View style={styles.boxParts}>
-        <View style={styles.headerParts}>
+      <View style={[styles.boxParts, { zIndex: 7 }]}>
+        <View style={[styles.headerParts, { zIndex: 6 }]}>
           <Text style={styles.headerTitle}>Parts:</Text>
           <Text style={styles.count}>{partsCollection.length} items</Text>
         </View>
-        <View>
+        <View style={{ zIndex: 5 }}>
           {partsCollection.slug == "" ? (
             <Text>""</Text>
           ) : (
@@ -487,9 +616,12 @@ export default function PartsScreen({ navigation }) {
               return (
                 <View
                   key={index}
-                  style={(styles.blockParts, { backgroundColor: color })}
+                  style={[
+                    styles.blockParts,
+                    { backgroundColor: color, zIndex: 4 },
+                  ]}
                 >
-                  <View style={{ flexDirection: "row" }}>
+                  <View style={{ flexDirection: "row", zIndex: 3 }}>
                     <View style={{ maxWidth: 320 }}>
                       <Text style={styles.partsText}>
                         id: {element.slug}
@@ -538,10 +670,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  bodyLogin: {
+  bodyParts: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 5,
+    //paddingVertical: 5,
     //   marginTop: -80,
   },
   boxTitle: {
@@ -570,9 +702,10 @@ const styles = StyleSheet.create({
     //  marginLeft: 43,
   },
   btn: {
-    height: 36,
-    width: 120,
-    marginTop: 70,
+    height: 25,
+    width: 80,
+    marginTop: 50,
+    paddingRight: 10,
   },
   styleDropdown: {
     width: 110,
@@ -590,7 +723,8 @@ const styles = StyleSheet.create({
   },
 
   viewStyle: {
-    paddingTop: 20,
+    paddingTop: 15,
+    alignItems: "center",
     //height: 100,
     //fontSize: 12,
     // marginTop: 5,
@@ -599,20 +733,22 @@ const styles = StyleSheet.create({
   },
   helperStyle: {
     fontSize: 12,
-    textAlign: "right",
+    textAlign: "center",
     color: "red",
     opacity: 0.6,
-    paddingLeft: 60,
-    paddingTop: 60,
+    width: 300,
+    marginLeft: -30,
+    paddingTop: 50,
     position: "absolute",
 
     // paddingBottom: 20,
   },
 
   boxParts: {
-    marginTop: 10,
+    marginTop: 30,
     backgroundColor: "#E6E6E6",
     width: "100%",
+    zIndex: 1,
   },
   headerParts: {
     flexDirection: "row",
@@ -664,5 +800,14 @@ const styles = StyleSheet.create({
   },
   smallBtnText: {
     fontSize: 12,
+  },
+  styleLabelDropDown: {
+    paddingTop: 10,
+  },
+  styleHelperInput: {
+    paddingTop: 0,
+  },
+  styleInput: {
+    width: 100,
   },
 });

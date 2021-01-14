@@ -194,10 +194,9 @@ export const UpdatePart = async ({
   make: make,
   model: model,
 }) => {
-  console.log(email);
   model = model.toUpperCase();
   make = upperFirstLetter(make);
-  return await APIConnect.put("/part/" + slug, {
+  return await APIConnect.put("/parts/" + slug, {
     slug,
     partName,
     cost,
