@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
+//let controller;
 
 function DropList({
   placeholder,
@@ -21,6 +22,7 @@ function DropList({
   searchablePlaceholder,
   searchablePlaceholderTextColor,
   searchableError,
+  controller,
 }) {
   return (
     <View style={[styles.container, style]}>
@@ -46,6 +48,7 @@ function DropList({
           textAlign: "left",
           color: "blue",
         }}
+        controller={controller}
         dropDownStyle={[{ backgroundColor: "#fafafa" }, dropDownStyle]}
         isVisible={isVisible}
         onOpen={onOpen}

@@ -9,6 +9,7 @@ import AdminScreen from "./src/screens/AdminScreen.js";
 import AddVehicleScreen from "./src/screens/AddVehicleScreen.js";
 import UpdateVehicleScreen from "./src/screens/UpdateVehicleScreen.js";
 import PartsScreen from "./src/screens/PartsScreen.js";
+import ServiceScreen from "./src/screens/ServiceScreen.js";
 
 const navigator = createStackNavigator(
   {
@@ -47,6 +48,10 @@ const navigator = createStackNavigator(
     PartsScreen: {
       screen: PartsScreen,
       navigationOptions: { title: "Parts" },
+    },
+    ServiceScreen: {
+      screen: ServiceScreen,
+      navigationOptions: { title: "Services" },
     },
   },
 

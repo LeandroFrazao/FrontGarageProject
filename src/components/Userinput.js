@@ -12,6 +12,8 @@ function Userinput({
   styleInput,
   maxLength,
   value,
+  editable,
+  focusable,
 }) {
   return (
     <View style={[styles.container, style]}>
@@ -23,6 +25,8 @@ function Userinput({
         onChangeText={onChange}
         keyboardType={keyboardtype}
         value={value}
+        editable={editable}
+        focusable={focusable}
       ></TextInput>
       <Text style={[styles.helper, styleHelper]}>{helperText}</Text>
     </View>

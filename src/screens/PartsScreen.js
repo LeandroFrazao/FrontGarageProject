@@ -199,10 +199,6 @@ export default function PartsScreen({ navigation }) {
           (obj) => element.category == value && element.partName == obj.partName
         )
     );
-    /* (ele, ind) =>
-  ind ===
-  arr.findIndex((elem) => elem.jobid === ele.jobid && elem.id === ele.id);
- */
 
     console.log(result);
     let partNameMap = [];
@@ -600,66 +596,67 @@ export default function PartsScreen({ navigation }) {
             }}
           ></BTN>
         </View>
-      </View>
-      <View style={[styles.boxParts, { zIndex: 7 }]}>
-        <View style={[styles.headerParts, { zIndex: 6 }]}>
-          <Text style={styles.headerTitle}>Parts:</Text>
-          <Text style={styles.count}>{partsCollection.length} items</Text>
-        </View>
-        <View style={{ zIndex: 5 }}>
-          {partsCollection.slug == "" ? (
-            <Text>""</Text>
-          ) : (
-            partsCollection &&
-            partsCollection.map((element, index) => {
-              let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
-              return (
-                <View
-                  key={index}
-                  style={[
-                    styles.blockParts,
-                    { backgroundColor: color, zIndex: 4 },
-                  ]}
-                >
-                  <View style={{ flexDirection: "row", zIndex: 3 }}>
-                    <View style={{ maxWidth: 320 }}>
-                      <Text style={styles.partsText}>
-                        id: {element.slug}
-                        {"  "}Name: {element.partName}
-                      </Text>
-                      <Text style={styles.partsText}>
-                        {"  "}Category: {element.category}
-                        {"  "}Make: {element.make}
-                      </Text>
-                      <Text style={styles.partsText}>
-                        {"  "}Model: {element.model}
-                        {"  "}Cost: {element.cost}
-                      </Text>
-                    </View>
-                    <View>
-                      <BTN
-                        style={styles.smallBtn}
-                        styleCaption={styles.smallBtnText}
-                        text="Edit"
-                        onPress={() => {
-                          EditClick(index);
-                        }}
-                      ></BTN>
 
-                      <BTN
-                        style={styles.smallBtn}
-                        styleCaption={styles.smallBtnText}
-                        text="Del"
-                        onPress={() => {
-                          DelClick({ slug: element.slug });
-                        }}
-                      />
+        <View style={[styles.boxParts, { zIndex: 7 }]}>
+          <View style={[styles.headerParts, { zIndex: 6 }]}>
+            <Text style={styles.headerTitle}>Parts:</Text>
+            <Text style={styles.count}>{partsCollection.length} items</Text>
+          </View>
+          <View style={{ zIndex: 5 }}>
+            {partsCollection.slug == "" ? (
+              <Text>""</Text>
+            ) : (
+              partsCollection &&
+              partsCollection.map((element, index) => {
+                let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
+                return (
+                  <View
+                    key={index}
+                    style={[
+                      styles.blockParts,
+                      { backgroundColor: color, zIndex: 4 },
+                    ]}
+                  >
+                    <View style={{ flexDirection: "row", zIndex: 3 }}>
+                      <View style={{ maxWidth: 320 }}>
+                        <Text style={styles.partsText}>
+                          id: {element.slug}
+                          {"  "}Name: {element.partName}
+                        </Text>
+                        <Text style={styles.partsText}>
+                          {"  "}Category: {element.category}
+                          {"  "}Make: {element.make}
+                        </Text>
+                        <Text style={styles.partsText}>
+                          {"  "}Model: {element.model}
+                          {"  "}Cost: {element.cost}
+                        </Text>
+                      </View>
+                      <View>
+                        <BTN
+                          style={styles.smallBtn}
+                          styleCaption={styles.smallBtnText}
+                          text="Edit"
+                          onPress={() => {
+                            EditClick(index);
+                          }}
+                        ></BTN>
+
+                        <BTN
+                          style={styles.smallBtn}
+                          styleCaption={styles.smallBtnText}
+                          text="Del"
+                          onPress={() => {
+                            DelClick({ slug: element.slug });
+                          }}
+                        />
+                      </View>
                     </View>
                   </View>
-                </View>
-              );
-            })
-          )}
+                );
+              })
+            )}
+          </View>
         </View>
       </View>
     </View>

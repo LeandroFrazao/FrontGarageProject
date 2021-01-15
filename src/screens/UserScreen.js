@@ -6,11 +6,7 @@ import { NavigationEvents } from "react-navigation";
 import Header from "../components/HeaderScreen";
 
 import BTN from "../components/BTN";
-import {
-  GetUserVehicles,
-  DeleteVehicle,
-  UserEmail,
-} from "../services/APIConnect";
+import { GetUserVehicles, DeleteVehicle } from "../services/APIConnect";
 
 export default function UserScreen({ navigation }) {
   const [userData, setUserData] = useState({
@@ -56,12 +52,9 @@ export default function UserScreen({ navigation }) {
     //console.log("loaduserVehicles " + userEmail);
     GetUserVehicles(userEmail)
       .then((response) => {
-        console.log(response);
-        console.log(response.data.users[0]);
+        //console.log(response.data.users[0]);
         let vehicles = [];
         vehicles = response.data.users[0].vehicles;
-        console.log(vehicles);
-        console.log(userData);
 
         setVehicleData((vehicleData) => vehicleData.concat(vehicles));
       })
@@ -69,9 +62,6 @@ export default function UserScreen({ navigation }) {
   };
 
   useEffect(() => {
-    //loadUserVehicles();
-    console.log("usereffect");
-
     loadUserData();
   }, []);
 
@@ -80,13 +70,17 @@ export default function UserScreen({ navigation }) {
     await DeleteVehicle({ email: userData.email, vin: vin })
       .then((result) => {
         setVehicleData(vehicleData.filter((element) => element.vin !== vin));
-        console.log(result);
       })
       .catch(onFailure);
   };
 
   const AddVehicle = () => {
     navigation.navigate("AddVehicleScreen", {
+      userEmail: userData.email,
+    });
+  };
+  const ServiceClick = () => {
+    navigation.navigate("ServiceScreen", {
       userEmail: userData.email,
     });
   };
@@ -127,13 +121,9 @@ export default function UserScreen({ navigation }) {
     <View style={styles.container}>
       <NavigationEvents
         onWillFocus={() => {
-          console.log("will Focus");
-
           loadUserVehicles();
         }}
         onWillBlur={() => {
-          console.log("will blur");
-
           setVehicleData([]);
         }}
       />
@@ -160,7 +150,7 @@ export default function UserScreen({ navigation }) {
             style={styles.btn}
             text="Service"
             onPress={() => {
-              //onClick();
+              ServiceClick();
             }}
           />
           <BTN
