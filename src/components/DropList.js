@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import DropDownPicker from "react-native-dropdown-picker";
 //let controller;
 
@@ -18,15 +19,13 @@ function DropList({
   onOpen,
   onClose,
   isVisible,
-  searchable,
-  searchablePlaceholder,
-  searchablePlaceholderTextColor,
-  searchableError,
   controller,
+  zIndex,
 }) {
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, { position: "relative" }]}>
       <Text style={[styles.label, styleLabel]}>{label} </Text>
+
       <DropDownPicker
         items={items}
         placeholder={placeholder}
@@ -37,9 +36,8 @@ function DropList({
             height: 40,
             width: 130,
           },
-          containerStyle,
         ]}
-        style={{ backgroundColor: "#fafafa" }}
+        style={[styles.pickerStyle, { backgroundColor: "#fafafa" }]}
         itemStyle={{
           justifyContent: "flex-start",
         }}
@@ -48,15 +46,15 @@ function DropList({
           textAlign: "left",
           color: "blue",
         }}
+        zIndex={zIndex}
         controller={controller}
-        dropDownStyle={[{ backgroundColor: "#fafafa" }, dropDownStyle]}
+        dropDownStyle={[
+          dropDownStyle,
+          { marginTop: 2, backgroundColor: "#fafafa" },
+        ]}
         isVisible={isVisible}
         onOpen={onOpen}
         onClose={onClose}
-        searchable={searchable}
-        searchablePlaceholder={searchablePlaceholder}
-        searchablePlaceholderTextColor={searchablePlaceholderTextColor}
-        searchableError={searchableError}
       />
       <Text style={[styles.helper, helperStyle]}>{helperText}</Text>
     </View>
@@ -64,7 +62,7 @@ function DropList({
 }
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "transparent",
+    //   backgroundColor: "transparent",
   },
   label: {
     fontSize: 12,

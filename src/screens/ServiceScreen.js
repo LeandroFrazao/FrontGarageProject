@@ -1,11 +1,18 @@
 import React from "react";
 
 import { useState, useEffect } from "react";
-import { StyleSheet, View, Text, Platform } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Text,
+  Platform,
+  ScrollView,
+  SafeAreaView,
+} from "react-native";
 import Userinput from "../components/Userinput";
 import BTN from "../components/BTN";
-import Calendar from "react-calendar";
-import "react-calendar/dist/Calendar.css";
+import DropDownPicker from "react-native-dropdown-picker";
+//import "react-calendar/dist/Calendar.css";
 
 import {
   GetParts,
@@ -20,9 +27,16 @@ import { NavigationEvents } from "react-navigation";
 export default function ServiceScreen({ navigation }) {
   const [valueDate, SetValueDate] = useState(new Date());
   const [dateSetting, setDateSetting] = useState({
-    maxDate: new Date(new Date().getFullYear(), new Date().getMonth(), 25),
-    minDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    today: new Date(),
+    maxDate: new Date(
+      new Date().getFullYear(),
+      new Date().getMonth() + 1,
+      new Date().getDate()
+    ),
+    minDate: new Date(
+      new Date().getFullYear(),
+      new Date().getMonth(),
+      new Date().getDate() + 1
+    ),
   });
 
   const [vehicleCollection, setVehicleCollection] = useState([]);
@@ -33,11 +47,10 @@ export default function ServiceScreen({ navigation }) {
     vin: "",
     status: "",
     description: "",
-    service: "",
+    serviceType: "",
     date_in: "",
     makeModel: "",
     cost: "",
-    reset: false,
   });
   const [serviceCollection, SetServiceCollection] = useState([]);
 
@@ -49,7 +62,7 @@ export default function ServiceScreen({ navigation }) {
     vin: "",
     status: "",
     description: "",
-    service: "",
+    serviceType: "",
     date_in: "",
     status: "",
   });
@@ -70,23 +83,13 @@ export default function ServiceScreen({ navigation }) {
     });
   };
 
-  let controller; //to control droplist
-
   const onFailure = async (error) => {
     console.log(error);
 
     if (error && error.response) {
       console.log(error.response);
       if (error && error.response.data.error) {
-        setHelperData({
-          ...helperData,
-          category: "",
-          make: "",
-          model: "",
-          cost: "",
-          partName: "",
-          partName2: error.response.data.error,
-        });
+        console.log(error.response.data.error);
       } else if (error.response.data.Security) {
         console.log(error.response.data.Security);
       }
@@ -161,45 +164,50 @@ export default function ServiceScreen({ navigation }) {
     let toReturn = {};
     console.log(prop, item);
     if (!prop && prop == "") {
-      toReturn = "Type the " + item;
-    } else if (prop.length < 2 && item != "cost") {
-      toReturn = "Minimum 2 characters, only numbers and letters";
-    } else if (prop.length < 2 && item == "cost") {
-      toReturn = "Minimum 2 characters !";
-    } else if (prop.length > 0) {
-      toReturn = "";
-    }
-
+      if (item == "Vehicle" || item == "Service Type" || item == "Date")
+        toReturn = "Select " + item;
+      else if (item == "description")
+        toReturn = "Give a short description of the problem.";
+      else toReturn = "";
+    } else toReturn = "";
     return toReturn;
   };
 
   // add new part
-  async function AddClick({ category, cost, model, make, partName }) {
+  async function AddClick({ vin, serviceType, date_in, description }) {
+    console.log(vin, serviceType, date_in, description);
+
     let getValidation = {};
     getValidation.description = validateData({
       prop: description,
       item: "description",
     });
-    getValidation.vin = validateData({ prop: vin, item: "vin" });
+    getValidation.vin = validateData({ prop: vin, item: "Vehicle" });
+    getValidation.serviceType = validateData({
+      prop: serviceType,
+      item: "Service Type",
+    });
+    getValidation.date_in = validateData({ prop: date_in, item: "Date" });
 
     setHelperData({
       description: getValidation.description,
       vin: getValidation.vin,
       date_in: getValidation.date_in,
-      service: getValidation.service,
+      serviceType: getValidation.serviceType,
     });
     console.log(getValidation);
     // let email = navigation.state.params.vehicle.email;
     console.log(navigation.state.params);
-    if (
+
+    console.log("ok");
+    /* if (
       getValidation.description == "" &&
       getValidation.vin == "" &&
       getValidation.date_in == "" &&
-      getValidation.service == "" &&
-      getValidation.make == ""
+      getValidation.serviceType == ""
     ) {
+    
       // add booking
-      /* 
       
       
       
@@ -207,26 +215,25 @@ export default function ServiceScreen({ navigation }) {
       
       
       
-      */
-    }
+      
+     
+    } */
   }
 
   const CleanClick = () => {
-    controller.reset();
     setServiceData({
       vin: null,
       description: "",
-      service: null,
+      serviceType: null,
       cost: "",
       makeModel: "",
     });
     setHelperData({
       ...helperData,
-      category: "",
-      make: "",
-      model: "",
-      cost: "",
-      partName: "",
+      vin: "",
+      description: "",
+      serviceType: "",
+      date_in: "",
     });
   };
 
@@ -263,6 +270,16 @@ export default function ServiceScreen({ navigation }) {
       );
     }
   };
+
+  const tileDisabled = () => {
+    let sundays = new Date(
+      new Date().getFullYear(),
+      new Date().getMonth(),
+      new Date().getDate() + 5
+    );
+    console.log(sundays);
+    return sundays;
+  };
   /* email: userEmail,
         serviceId: serviceId,
         vin: vin,
@@ -272,28 +289,61 @@ export default function ServiceScreen({ navigation }) {
         service: service,
         date_in: date_in, 
         
-        
-        
+         tileDisabled={({ activeStartDate, date, view }) =>
+              priorityDays.some(
+                (day: any) => day.date !== moment(date).format("YYYY-MM-DD")
+              )
+            }
+
+<Calendar
+                tileDisabled={({ date, view }) =>
+                  view === "month" && // Block day tiles only
+                  date.getDay() === 0
+                }
+                tileClassName={({ date }) => {
+                  const isOnList = disabledDates.some((data, index) => {
+                    let datedata = new Date(data);
+                    let dateOne = new Date(
+                      new Date().getFullYear(),
+                      new Date().getMonth(),
+                      new Date().getDate() + 1
+                    );
+                    let datetwo = datedata;
+                    return dateOne === datetwo;
+                  });
+
+                  if (isOnList) {
+                    return "{background-color: blue; color: red !important;}";
+                  } else {
+                    return null;
+                  }
+                }}
+                onChange={SetValueDate}
+                value={valueDate}
+                maxDetail={"month"}
+                maxDate={dateSetting.maxDate}
+                minDate={dateSetting.minDate}
+              />
+
         
         */
+  const now = new Date();
+  const tomorrow = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth(),
+    new Date().getDate() + 1
+  );
+
+  const disabledDates = [tomorrow];
 
   return (
     <View style={styles.container}>
       <View style={[{ paddingTop: 10, paddingHorizontal: 20 }]}>
         <View>
           <View style={[{ justifyContent: "center", alignItems: "center" }]}>
-            <View style={[{ width: "80%" }]}>
-              <Calendar
-                onChange={SetValueDate}
-                value={valueDate}
-                activeStartDate={dateSetting.today}
-                maxDetail={"month"}
-                maxDate={dateSetting.maxDate}
-                minDate={dateSetting.today}
-              />
-            </View>
+            <View style={[{ width: "80%" }]}></View>
           </View>
-          <View style={[{ flexDirection: "row" }]}>
+          <View style={[{ flexDirection: "row", height: 60 }]}>
             <Text
               style={[
                 {
@@ -309,25 +359,27 @@ export default function ServiceScreen({ navigation }) {
               Pick a day:
             </Text>
             <Userinput
-              style={[{ paddingLeft: 5 }]}
+              style={[{ paddingLeft: 5, paddingTop: 10, height: 60 }]}
               styleInput={[
                 {
                   width: 150,
                   backgroundColor: "white",
                   borderColor: "gray",
                   borderWidth: 2,
-                  height: 30,
+                  height: 32,
+                  paddingTop: 10,
+                  //  alignSelf: "auto",
                   fontSize: 15,
                   textAlign: "center",
                 },
               ]}
-              styleHelper={[]}
+              styleHelper={{ height: 10, paddingTop: 0 }}
               text=""
               placeholder=""
               value={[valueDate.toUTCString().substr(0, 16)]}
               onChange={(e) => setPartsData()}
               keyboardtype={"default"}
-              helperText={helperData.category} //to show errors
+              helperText={helperData.date_in} //to show errors
               editable={false}
               focusable={false}
             />
@@ -340,20 +392,20 @@ export default function ServiceScreen({ navigation }) {
               flexDirection: "row",
               borderColor: "yellow",
               borderWidth: 2,
-              zIndex: 99,
+              ...(Platform.OS !== "android" && { zIndex: 99 }),
+              height: 80,
             },
           ]}
         >
           <DropList
             label={"Vehicle: " + serviceData.makeModel}
-            // helperText={[]}
+            helperText={helperData.vin}
             items={vehicleVin}
             style={[{ paddingRight: 50 }]}
             //   containerStyle={[]}
-            //   styleLabel={}
-            //    helperStyle={}
+            styleLabel={{ height: 20, paddingTop: 0 }}
+            helperStyle={{ height: 20, paddingTop: 0 }}
             placeholder="Select"
-            controller={() => (instance) => (controller = instance)}
             onChangeItem={(item) => {
               setServiceData({
                 ...serviceData,
@@ -369,19 +421,20 @@ export default function ServiceScreen({ navigation }) {
               })
             }
           />
+
           <DropList
             label={"Service Type: " + serviceData.cost}
-            // helperText={[]}
+            helperText={helperData.serviceType}
             items={partsName}
             style={[{ paddingRight: 50 }]}
             //   containerStyle={[]}
-            styleLabel={{ width: 150 }}
-            //    helperStyle={}
+            styleLabel={{ height: 20, paddingTop: 0 }}
+            helperStyle={{ height: 20, paddingTop: 0 }}
             placeholder="Select"
             onChangeItem={(item) => {
               setServiceData({
                 ...serviceData,
-                service: item.value,
+                serviceType: item.value,
                 cost: "€ " + item.cost,
               });
             }}
@@ -393,17 +446,26 @@ export default function ServiceScreen({ navigation }) {
               })
             }
           />
+        </View>
+        <View
+          style={[
+            styles.viewStyle,
+            {
+              height: 77,
+            },
+          ]}
+        >
           <Userinput
             style={[{ paddingRight: 10, borderColor: "red", borderWidth: 2 }]}
-            styleInput={[styles.styleInput]}
-            styleHelper={styles.styleHelperInput}
-            maxLength={16}
-            text="Category"
-            placeholder="Category"
+            styleInput={[{ width: 300 }]}
+            styleHelper={[]}
+            maxLength={30}
+            text="Description"
+            placeholder="Description"
             //value={}
             // onChange={(e) => setPartsData({ ...partsData, category: e })}
             keyboardtype={"default"}
-            helperText={helperData.category} //to show errors
+            helperText={helperData.description} //to show errors/>
           />
         </View>
         <View
@@ -411,7 +473,8 @@ export default function ServiceScreen({ navigation }) {
             styles.viewStyle,
             {
               flexDirection: "row",
-              zIndex: 16,
+
+              height: 77,
             },
           ]}
         >
@@ -419,7 +482,14 @@ export default function ServiceScreen({ navigation }) {
             style={styles.btn}
             text={btnOption.add == true ? "Confirm" : "Update"}
             onPress={() => {
-              btnOption.add ? AddClick() : UpdateClick();
+              btnOption.add
+                ? AddClick({
+                    serviceType: serviceData.serviceType,
+                    vin: serviceData.vin,
+                    date_in: serviceData.date_in,
+                    description: serviceData.description,
+                  })
+                : UpdateClick();
             }}
           ></BTN>
           <BTN
@@ -436,7 +506,7 @@ export default function ServiceScreen({ navigation }) {
             <Text style={[]}>Bookings:</Text>
             <Text style={styles.count}>{partsCollection.length} items</Text>
           </View>
-          <View style={{ zIndex: 5 }}>
+          <View style={[{}]}>
             {serviceCollection.slug == "" ? (
               <Text>""</Text>
             ) : (
@@ -445,41 +515,45 @@ export default function ServiceScreen({ navigation }) {
                 let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
                 return (
                   <View key={index} style={[]}>
-                    <View style={[]}>
-                      <View style={{ maxWidth: 320 }}>
-                        <Text style={styles.partsText}>
-                          id: {element.slug}
-                          {"  "}Name: {element.partName}
-                        </Text>
-                        <Text style={styles.partsText}>
-                          {"  "}Category: {element.category}
-                          {"  "}Make: {element.make}
-                        </Text>
-                        <Text style={styles.partsText}>
-                          {"  "}Model: {element.model}
-                          {"  "}Cost: {element.cost}
-                        </Text>
-                      </View>
-                      <View>
-                        <BTN
-                          style={styles.smallBtn}
-                          styleCaption={styles.smallBtnText}
-                          text="Edit"
-                          onPress={() => {
-                            //   EditClick(index);
-                          }}
-                        ></BTN>
+                    <SafeAreaView>
+                      <ScrollView>
+                        <View style={{ flex: 1 }}>
+                          <View style={{ maxWidth: 320 }}>
+                            <Text style={styles.partsText}>
+                              id: {element.slug}
+                              {"  "}Name: {element.partName}
+                            </Text>
+                            <Text style={styles.partsText}>
+                              {"  "}Category: {element.category}
+                              {"  "}Make: {element.make}
+                            </Text>
+                            <Text style={styles.partsText}>
+                              {"  "}Model: {element.model}
+                              {"  "}Cost: {element.cost}
+                            </Text>
+                          </View>
+                          <View>
+                            <BTN
+                              style={styles.smallBtn}
+                              styleCaption={styles.smallBtnText}
+                              text="Edit"
+                              onPress={() => {
+                                //   EditClick(index);
+                              }}
+                            ></BTN>
 
-                        <BTN
-                          style={styles.smallBtn}
-                          styleCaption={styles.smallBtnText}
-                          text="Del"
-                          onPress={() => {
-                            //DelClick({ slug: element.slug });
-                          }}
-                        />
-                      </View>
-                    </View>
+                            <BTN
+                              style={styles.smallBtn}
+                              styleCaption={styles.smallBtnText}
+                              text="Del"
+                              onPress={() => {
+                                //DelClick({ slug: element.slug });
+                              }}
+                            />
+                          </View>
+                        </View>
+                      </ScrollView>
+                    </SafeAreaView>
                   </View>
                 );
               })
@@ -519,7 +593,7 @@ const styles = StyleSheet.create({
   },
 
   count: {
-    alignContent: "right",
+    alignContent: "flex-start",
     fontFamily: "Roboto",
     color: "rgba(31,31,78,1)",
     marginRight: 35,

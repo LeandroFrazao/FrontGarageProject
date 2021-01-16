@@ -34,13 +34,13 @@ export default function LoginScreen({ navigation }) {
     return toReturn;
   };
 
-  const onSuccess = async ({ data }) => {
+  const onSuccess = ({ data }) => {
     // if data.user is valid, the login is valid, and the token is saved on header,
     //then the user data is fetched by calling the function UserEmail
     if (data.user && data.token) {
       //console.log(data.token);
       SetUserToken(data.token);
-      await UserEmail(data.user).then(onSuccess).catch(onFailure);
+      UserEmail(data.user).then(onSuccess).catch(onFailure);
     } //if data.users is valid, the user data was fetched,
     //then it is sent by props to to the screen (user or admin).
     else if (data.users && data.users[0]) {
@@ -82,11 +82,11 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
-  async function click({ email, key }) {
+  function click({ email, key }) {
     // let email = "bolivar@lgmail.com";
     // let key = "123456";
-    //email = "leandrofrazao@hotmail.com"; /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    email = "bolivar@lgmail.com";
+    email = "leandrofrazao@hotmail.com"; /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //email = "bolivar@lgmail.com";
     //email = "hulk@marvel.com";
     key = "123456";
     let getValidation = {};
@@ -97,7 +97,7 @@ export default function LoginScreen({ navigation }) {
       key: getValidation.key,
     });
     if (getValidation.email == "" && getValidation.key == "") {
-      await Login(email, key).then(onSuccess).catch(onFailure);
+      Login(email, key).then(onSuccess).catch(onFailure);
 
       // console.log(userData);
     }
