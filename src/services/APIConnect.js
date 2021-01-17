@@ -214,5 +214,13 @@ export const DeletePart = async ({ slug }) => {
     },
   });
 };
+// Get services only admin
+export const GetService = async () => {
+  return await APIConnect.get("/service");
+};
+// Get service  by user
+export const GetUserService = async (email) => {
+  return await APIConnect.get("/users/" + email + "/service");
+};
 
 export default APIConnect;

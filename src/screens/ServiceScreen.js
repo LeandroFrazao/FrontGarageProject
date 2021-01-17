@@ -8,11 +8,14 @@ import {
   Platform,
   ScrollView,
   SafeAreaView,
+  Button,
 } from "react-native";
 import Userinput from "../components/Userinput";
 import BTN from "../components/BTN";
 import DropDownPicker from "react-native-dropdown-picker";
-//import "react-calendar/dist/Calendar.css";
+import { Calendar } from "react-native-calendars";
+import Icon from "react-native-vector-icons/Ionicons";
+import moment from "moment";
 
 import {
   GetParts,
@@ -21,11 +24,11 @@ import {
   UpdatePart,
   GetUserVehicles,
 } from "../services/APIConnect";
-import DropList from "../components/DropList";
+
 import { NavigationEvents } from "react-navigation";
 
 export default function ServiceScreen({ navigation }) {
-  const [valueDate, SetValueDate] = useState(new Date());
+  const [valueDate, SetValueDate] = useState("");
   const [dateSetting, setDateSetting] = useState({
     maxDate: new Date(
       new Date().getFullYear(),
@@ -54,7 +57,7 @@ export default function ServiceScreen({ navigation }) {
   });
   const [serviceCollection, SetServiceCollection] = useState([]);
 
-  const [partsCollection, setPartsCollection] = useState([]);
+  const [partsCollection, setPartsCollection] = useState([]); //pode excluir apos ajeitar a lista de bookings
 
   const [partsName, setPartsName] = useState([]);
 
@@ -81,6 +84,34 @@ export default function ServiceScreen({ navigation }) {
       isVisiblePartName: false,
       ...props,
     });
+  };
+
+  const [sundays, setSundays] = useState();
+  const [busyDay, setBusyDay] = useState();
+  const [disableDays, SetDisableDays] = useState();
+
+  const DisableSundays = () => {
+    let month = new Date().getMonth();
+    let year = new Date().getFullYear();
+    let startDay = moment().day("1").month(month).year(year).startOf("month");
+    const endMonth = moment()
+      .month(month + 1)
+      .year(year)
+      .endOf("month");
+    console.log(startDay);
+    console.log(endMonth);
+    let disabledDates = {};
+    while (startDay.isBefore(endMonth)) {
+      disabledDates[startDay.day("Sunday").format("YYYY-MM-DD")] = {
+        disabled: true,
+        disableTouchEvent: true,
+      };
+      startDay.add(7, "days");
+    }
+
+    SetDisableDays(disabledDates);
+    console.log(disabledDates);
+    // return disabledDates;
   };
 
   const onFailure = async (error) => {
@@ -156,6 +187,8 @@ export default function ServiceScreen({ navigation }) {
   };
 
   useEffect(() => {
+    DisableSundays();
+
     loadUserVehicles();
     loadServiceType();
   }, []);
@@ -174,7 +207,7 @@ export default function ServiceScreen({ navigation }) {
   };
 
   // add new part
-  async function AddClick({ vin, serviceType, date_in, description }) {
+  function AddClick({ vin, serviceType, date_in, description }) {
     console.log(vin, serviceType, date_in, description);
 
     let getValidation = {};
@@ -209,24 +242,29 @@ export default function ServiceScreen({ navigation }) {
     
       // add booking
       
-      
-      
-      
-      
-      
-      
+       
       
      
     } */
   }
 
   const CleanClick = () => {
+    let fullDay = {
+      "2021-01-18": {
+        disabled: true,
+        disableTouchEvent: true,
+      },
+    };
+
+    console.log(disableDays);
+    SetDisableDays({ ...disableDays, ...fullDay });
     setServiceData({
-      vin: null,
+      vin: "",
       description: "",
-      serviceType: null,
+      serviceType: "",
       cost: "",
       makeModel: "",
+      date_in: "",
     });
     setHelperData({
       ...helperData,
@@ -271,15 +309,6 @@ export default function ServiceScreen({ navigation }) {
     }
   };
 
-  const tileDisabled = () => {
-    let sundays = new Date(
-      new Date().getFullYear(),
-      new Date().getMonth(),
-      new Date().getDate() + 5
-    );
-    console.log(sundays);
-    return sundays;
-  };
   /* email: userEmail,
         serviceId: serviceId,
         vin: vin,
@@ -327,21 +356,99 @@ export default function ServiceScreen({ navigation }) {
 
         
         */
-  const now = new Date();
-  const tomorrow = new Date(
-    new Date().getFullYear(),
-    new Date().getMonth(),
-    new Date().getDate() + 1
-  );
-
-  const disabledDates = [tomorrow];
 
   return (
     <View style={styles.container}>
       <View style={[{ paddingTop: 10, paddingHorizontal: 20 }]}>
         <View>
           <View style={[{ justifyContent: "center", alignItems: "center" }]}>
-            <View style={[{ width: "80%" }]}></View>
+            <View style={[{}]}>
+              <Calendar
+                // Specify style for calendar container element. Default = {}
+
+                style={{
+                  borderWidth: 1,
+                  borderColor: "gray",
+                  height: 250,
+                }}
+                theme={{
+                  // textSectionTitleDisabledColor: "#d9e1e8",
+                  backgroundColor: "#ffffff",
+                  calendarBackground: "#ffffff",
+                  textSectionTitleColor: "#b6c1cd",
+                  textSectionTitleDisabledColor: "#d9e1e8",
+                  selectedDayBackgroundColor: "#00adf5",
+                  selectedDayTextColor: "blue",
+                  todayTextColor: "#00adf5",
+                  dayTextColor: "#2d4150",
+                  textDisabledColor: "#d9e1e8",
+                  dotColor: "#00adf5",
+                  selectedDotColor: "#ffffff",
+                  arrowColor: "#2d4150",
+                  disabledArrowColor: "#d9e1e8",
+                  monthTextColor: "#2d4150",
+                  indicatorColor: "#2d4150",
+                  textDayFontFamily: "monospace",
+                  textMonthFontFamily: "monospace",
+                  textDayHeaderFontFamily: "monospace",
+                  textDayFontWeight: "300",
+                  textMonthFontWeight: "bold",
+                  textDayHeaderFontWeight: "300",
+                  textDayFontSize: 14,
+                  textMonthFontSize: 14,
+                  textDayHeaderFontSize: 14,
+                  "stylesheet.day.basic": {
+                    base: {
+                      height: 20,
+                    },
+                  },
+                  "stylesheet.calendar.header": {
+                    week: {
+                      marginTop: 0,
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                    },
+                    dayHeader: {
+                      marginTop: 0,
+                      marginBottom: 0,
+                      width: 35,
+                      textAlign: "center",
+                    },
+                  },
+                }}
+                firstDay={1}
+                // hideArrows={false}
+                hideExtraDays={true}
+                disableMonthChange={false}
+                current={new Date()}
+                disabledDaysIndexes={[6]}
+                renderArrow={(direction) =>
+                  direction === "left" ? (
+                    <Icon
+                      name="md-arrow-back-circle-outline"
+                      size={20}
+                      color="#4F8EF7"
+                    />
+                  ) : (
+                    <Icon
+                      name="ios-arrow-forward-circle-outline"
+                      size={20}
+                      color="#4F8EF7"
+                    />
+                  )
+                }
+                markedDates={{ ...disableDays }}
+                minDate={dateSetting.minDate}
+                maxDate={dateSetting.maxDate}
+                // disableAllTouchEventsForDisabledDays={true}
+                onDayPress={(day) => {
+                  setServiceData({
+                    ...serviceData,
+                    date_in: day.dateString,
+                  });
+                }}
+              />
+            </View>
           </View>
           <View style={[{ flexDirection: "row", height: 60 }]}>
             <Text
@@ -368,16 +475,15 @@ export default function ServiceScreen({ navigation }) {
                   borderWidth: 2,
                   height: 32,
                   paddingTop: 10,
-                  //  alignSelf: "auto",
                   fontSize: 15,
                   textAlign: "center",
                 },
               ]}
               styleHelper={{ height: 10, paddingTop: 0 }}
               text=""
-              placeholder=""
-              value={[valueDate.toUTCString().substr(0, 16)]}
-              onChange={(e) => setPartsData()}
+              placeholder="Pick a Day Above"
+              value={serviceData.date_in}
+              // onChange={(e) => setServiceData({ ...serviceData, date_in: e })}
               keyboardtype={"default"}
               helperText={helperData.date_in} //to show errors
               editable={false}
@@ -390,62 +496,93 @@ export default function ServiceScreen({ navigation }) {
             styles.viewStyle,
             {
               flexDirection: "row",
-              borderColor: "yellow",
-              borderWidth: 2,
+
               ...(Platform.OS !== "android" && { zIndex: 99 }),
               height: 80,
             },
           ]}
         >
-          <DropList
-            label={"Vehicle: " + serviceData.makeModel}
-            helperText={helperData.vin}
-            items={vehicleVin}
-            style={[{ paddingRight: 50 }]}
-            //   containerStyle={[]}
-            styleLabel={{ height: 20, paddingTop: 0 }}
-            helperStyle={{ height: 20, paddingTop: 0 }}
-            placeholder="Select"
-            onChangeItem={(item) => {
-              setServiceData({
-                ...serviceData,
-                vin: item.value,
-                makeModel: item.makeModel,
-              });
-            }}
-            isVisible={dropList.isVisibleVin}
-            onOpen={() => changeVisibility({ isVisibleVin: true })}
-            onClose={() =>
-              setDropList({
-                isVisibleVin: false,
-              })
-            }
-          />
+          <View
+            style={[{ position: "relative", height: 74, paddingRight: 20 }]}
+          >
+            <Text style={[styles.label]}>Vehicle: {serviceData.makeModel}</Text>
+            <DropDownPicker
+              items={vehicleVin}
+              placeholder="Select"
+              onChangeItem={(item) => {
+                setServiceData({
+                  ...serviceData,
+                  vin: item.value,
+                  makeModel: item.makeModel,
+                });
+              }}
+              isVisible={dropList.isVisibleVin}
+              onOpen={() => changeVisibility({ isVisibleVin: true })}
+              onClose={() =>
+                setDropList({
+                  isVisibleVin: false,
+                })
+              }
+              containerStyle={[
+                {
+                  height: 40,
+                  width: 130,
+                },
+              ]}
+              style={[styles.dropListStyle, { backgroundColor: "#fafafa" }]}
+              itemStyle={{
+                justifyContent: "flex-start",
+              }}
+              labelStyle={{
+                fontSize: 14,
+                textAlign: "left",
+                color: "blue",
+              }}
+              zIndex={7000}
+              dropDownStyle={[{ marginTop: 2, backgroundColor: "#fafafa" }]}
+            />
+            <Text style={[styles.helper]}>{helperData.vin}</Text>
+          </View>
 
-          <DropList
-            label={"Service Type: " + serviceData.cost}
-            helperText={helperData.serviceType}
-            items={partsName}
-            style={[{ paddingRight: 50 }]}
-            //   containerStyle={[]}
-            styleLabel={{ height: 20, paddingTop: 0 }}
-            helperStyle={{ height: 20, paddingTop: 0 }}
-            placeholder="Select"
-            onChangeItem={(item) => {
-              setServiceData({
-                ...serviceData,
-                serviceType: item.value,
-                cost: "€ " + item.cost,
-              });
-            }}
-            isVisible={dropList.isVisiblePartName}
-            onOpen={() => changeVisibility({ isVisiblePartName: true })}
-            onClose={() =>
-              setDropList({
-                isVisiblePartName: false,
-              })
-            }
-          />
+          <View style={[{ position: "relative", height: 74 }]}>
+            <Text style={[styles.label]}>Service Type: {serviceData.cost}</Text>
+            <DropDownPicker
+              items={partsName}
+              placeholder="Select"
+              onChangeItem={(item) => {
+                setServiceData({
+                  ...serviceData,
+                  serviceType: item.value,
+                  cost: "€ " + item.cost,
+                });
+              }}
+              isVisible={dropList.isVisiblePartName}
+              onOpen={() => changeVisibility({ isVisiblePartName: true })}
+              onClose={() =>
+                setDropList({
+                  isVisiblePartName: false,
+                })
+              }
+              containerStyle={[
+                {
+                  height: 40,
+                  width: 130,
+                },
+              ]}
+              style={[styles.dropListStyle, { backgroundColor: "#fafafa" }]}
+              itemStyle={{
+                justifyContent: "flex-start",
+              }}
+              labelStyle={{
+                fontSize: 14,
+                textAlign: "left",
+                color: "blue",
+              }}
+              zIndex={6000}
+              dropDownStyle={[{ marginTop: 2, backgroundColor: "#fafafa" }]}
+            />
+            <Text style={[styles.helper]}>{helperData.serviceType}</Text>
+          </View>
         </View>
         <View
           style={[
@@ -456,14 +593,14 @@ export default function ServiceScreen({ navigation }) {
           ]}
         >
           <Userinput
-            style={[{ paddingRight: 10, borderColor: "red", borderWidth: 2 }]}
-            styleInput={[{ width: 300 }]}
+            style={[{ paddingRight: 10 }]}
+            styleInput={[{ width: 320 }]}
             styleHelper={[]}
             maxLength={30}
             text="Description"
             placeholder="Description"
-            //value={}
-            // onChange={(e) => setPartsData({ ...partsData, category: e })}
+            value={serviceData.description}
+            onChange={(e) => setServiceData({ ...serviceData, description: e })}
             keyboardtype={"default"}
             helperText={helperData.description} //to show errors/>
           />
@@ -501,20 +638,23 @@ export default function ServiceScreen({ navigation }) {
           ></BTN>
         </View>
 
-        <View style={[]}>
-          <View style={[]}>
-            <Text style={[]}>Bookings:</Text>
-            <Text style={styles.count}>{partsCollection.length} items</Text>
+        <View style={[styles.boxService]}>
+          <View style={[styles.headerService]}>
+            <Text style={[styles.headerTitle]}>Bookings:</Text>
+            <Text style={styles.count}>{serviceCollection.length} items</Text>
           </View>
           <View style={[{}]}>
             {serviceCollection.slug == "" ? (
               <Text>""</Text>
             ) : (
-              partsCollection &&
-              partsCollection.map((element, index) => {
+              serviceCollection &&
+              serviceCollection.map((element, index) => {
                 let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
                 return (
-                  <View key={index} style={[]}>
+                  <View
+                    key={index}
+                    style={[styles.blockParts, { backgroundColor: color }]}
+                  >
                     <SafeAreaView>
                       <ScrollView>
                         <View style={{ flex: 1 }}>
@@ -625,5 +765,40 @@ const styles = StyleSheet.create({
   },
   styleInput: {
     width: 100,
+  },
+
+  boxService: {
+    marginTop: 30,
+    backgroundColor: "#E6E6E6",
+    width: "100%",
+  },
+
+  headerService: {
+    flexDirection: "row",
+    backgroundColor: "#E6E6E6",
+    width: "100%",
+
+    justifyContent: "space-between",
+  },
+  headerTitle: {
+    fontFamily: "Roboto",
+    color: "rgba(31,31,78,1)",
+    fontSize: 18,
+    marginLeft: 35,
+    marginTop: 5,
+    textAlign: "left",
+  },
+  count: {
+    alignContent: "flex-start",
+    fontFamily: "Roboto",
+    color: "rgba(31,31,78,1)",
+    marginRight: 35,
+    marginTop: 5,
+  },
+  helper: {
+    fontSize: 12,
+    textAlign: "left",
+    color: "red",
+    opacity: 0.6,
   },
 });

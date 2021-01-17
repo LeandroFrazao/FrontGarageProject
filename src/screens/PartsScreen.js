@@ -275,7 +275,7 @@ export default function PartsScreen({ navigation }) {
       getValidation.partName == "" &&
       getValidation.make == ""
     ) {
-      // setPartsCollection([partsCollection.push(partsData)]);
+      // setPartsCollection([...partsCollection,(partsData)]);
       AddParts({ category, cost, model, make, partName })
         .then((response) => {
           console.log(response);
