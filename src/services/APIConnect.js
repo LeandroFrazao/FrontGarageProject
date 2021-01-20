@@ -3,32 +3,20 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Create axios client, pre-configured with baseURL
 export const APIConnect = axios.create({
-  baseURL: "https://tranquil-coast-47648.herokuapp.com",
-  //baseURL: "http://localhost:3000",
+  //baseURL: "https://tranquil-coast-47648.herokuapp.com",
+  baseURL: "http://localhost:3000",
 
   timeout: 100000,
 });
 
 //Delete  headers authorizarion
 export const DeleteUserToken = () => {
-  //console.log("Apiconnect deleted");
   delete APIConnect.defaults.headers.common["Authorization"];
 };
 
 // Set  Token in Authorization to be included in all calls
 export const SetUserToken = (token) => {
   APIConnect.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  /* APIConnect.interceptors.request.use(
-    (config) => {
-      console.log("aqui 2", token);
-      config.headers.Authorization = `Bearer ${token}`;
-
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    }
-  ); */
 };
 
 export const RemoveStorage = async (item) => {
@@ -214,6 +202,11 @@ export const DeletePart = async ({ slug }) => {
     },
   });
 };
+
+//get bookings
+export const GetBookings = async () => {
+  return await APIConnect.get("/users/service/bookings");
+};
 // Get services only admin
 export const GetService = async () => {
   return await APIConnect.get("/service");
@@ -221,6 +214,65 @@ export const GetService = async () => {
 // Get service  by user
 export const GetUserService = async (email) => {
   return await APIConnect.get("/users/" + email + "/service");
+};
+
+// Add service
+export const AddService = async ({
+  vin: vin,
+  status: status,
+  description: description,
+  serviceType: serviceType,
+  date_in: date_in,
+}) => {
+  return await APIConnect.post("/service", {
+    vin,
+    status,
+    description,
+    serviceType,
+    date_in,
+  });
+};
+// Update user service
+export const UpdateService = async ({
+  email: email,
+  vin: vin,
+  status: status,
+  description: description,
+  serviceType: serviceType,
+  date_in: date_in,
+}) => {
+  console.log(email);
+  return await APIConnect.put("/users/" + email + "/service/" + vin, {
+    vin,
+    status,
+    description,
+    serviceType,
+    date_in,
+  });
+};
+// Update user service (ADM)
+export const UpdateStatusService = async ({
+  email: email,
+  vin: vin,
+  status: status,
+  description: description,
+  serviceType: serviceType,
+  date_in: date_in,
+}) => {
+  return await APIConnect.put(
+    "/users/" + email + "/service/" + vin + "/" + status,
+    { vin, description, serviceType, date_in }
+  );
+};
+
+// Delete service
+export const DeleteService = async ({ serviceId }) => {
+  console.log(slug);
+  return await APIConnect.delete("/users/" + email + "/service/" + serviceId, {
+    data: {
+      serviceId: serviceId,
+    },
+  });
 };
 
 export default APIConnect;

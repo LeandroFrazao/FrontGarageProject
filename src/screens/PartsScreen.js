@@ -389,7 +389,7 @@ export default function PartsScreen({ navigation }) {
           ]}
         >
           <Userinput
-            style={[styles.styleTextBox1, { paddingRight: 10, height: 46 }]}
+            style={[{ paddingRight: 10, height: 46 }]}
             styleInput={[styles.styleInput]}
             styleHelper={styles.styleHelperInput}
             maxLength={16}
@@ -402,7 +402,7 @@ export default function PartsScreen({ navigation }) {
           ></Userinput>
 
           <Userinput
-            style={[styles.styleTextBox1, { paddingRight: 10, height: 46 }]}
+            style={[{ paddingRight: 10, height: 46 }]}
             styleInput={[styles.styleInput]}
             styleHelper={styles.styleHelperInput}
             maxLength={10}
@@ -415,7 +415,7 @@ export default function PartsScreen({ navigation }) {
           ></Userinput>
 
           <Userinput
-            style={[styles.styleTextBox1, { paddingRight: 0, height: 46 }]}
+            style={[{ paddingRight: 0, height: 46 }]}
             styleInput={[styles.styleInput]}
             styleHelper={styles.styleHelperInput}
             maxLength={10}
@@ -566,7 +566,7 @@ export default function PartsScreen({ navigation }) {
         >
           <View>
             <Userinput
-              style={[styles.styleTextBox1, { paddingRight: 46, height: 46 }]}
+              style={[{ paddingRight: 46, height: 46 }]}
               styleInput={[styles.styleInput]}
               styleHelper={{ height: 0, paddingTop: 0 }}
               maxLength={16}
@@ -616,7 +616,7 @@ export default function PartsScreen({ navigation }) {
           </View>
 
           <Userinput
-            style={[styles.styleTextBox1, { paddingRight: 0, height: 82 }]}
+            style={[{ paddingRight: 0, height: 82 }]}
             styleInput={[styles.styleInput]}
             styleHelper={styles.styleHelperInput}
             maxLength={10}
@@ -751,7 +751,6 @@ const styles = StyleSheet.create({
   boxTitle: {
     backgroundColor: "#E6E6E6",
     width: "100%",
-    //height: 96,
     justifyContent: "center",
   },
   title: {
@@ -760,18 +759,7 @@ const styles = StyleSheet.create({
     fontSize: 30,
     textAlign: "center",
   },
-  styleTextBox1: {
-    //  height: 35,
-    //width: 275,
-    //marginTop: 5,
-    //  marginLeft: 43,
-  },
-  styleTextBox2: {
-    height: 20,
-    // width: 275,
-    marginTop: 5,
-    //  marginLeft: 43,
-  },
+
   btn: {
     height: 25,
     width: 80,
@@ -787,20 +775,11 @@ const styles = StyleSheet.create({
   dropListStyle: {
     height: 20,
     fontSize: 12,
-    //paddingTop: -50,
-    // borderColor: "red",
-    //borderWidth: 2,
-    //  height: 100,
   },
 
   viewStyle: {
     paddingTop: 15,
     alignItems: "center",
-    //height: 100,
-    //fontSize: 12,
-    // marginTop: 5,
-    // textAlign: "left",
-    // paddingTop: 10,
   },
   helperStyle: {
     fontSize: 12,
@@ -811,8 +790,6 @@ const styles = StyleSheet.create({
     marginLeft: -30,
     paddingTop: 50,
     position: "absolute",
-
-    // paddingBottom: 20,
   },
 
   boxParts: {
@@ -885,6 +862,5 @@ const styles = StyleSheet.create({
     textAlign: "left",
     color: "red",
     opacity: 0.6,
-    //paddingTop: 8,
   },
 });

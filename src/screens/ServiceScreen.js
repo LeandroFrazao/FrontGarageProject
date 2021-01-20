@@ -8,7 +8,6 @@ import {
   Platform,
   ScrollView,
   SafeAreaView,
-  Button,
 } from "react-native";
 import Userinput from "../components/Userinput";
 import BTN from "../components/BTN";
@@ -22,13 +21,15 @@ import {
   AddParts,
   DeletePart,
   UpdatePart,
+  GetUserService,
   GetUserVehicles,
+  GetBookings,
+  AddService,
 } from "../services/APIConnect";
 
 import { NavigationEvents } from "react-navigation";
 
 export default function ServiceScreen({ navigation }) {
-  const [valueDate, SetValueDate] = useState("");
   const [dateSetting, setDateSetting] = useState({
     maxDate: new Date(
       new Date().getFullYear(),
@@ -42,7 +43,6 @@ export default function ServiceScreen({ navigation }) {
     ),
   });
 
-  const [vehicleCollection, setVehicleCollection] = useState([]);
   const [vehicleVin, setVehicleVin] = useState([]);
   const [serviceData, setServiceData] = useState({
     email: "",
@@ -56,8 +56,6 @@ export default function ServiceScreen({ navigation }) {
     cost: "",
   });
   const [serviceCollection, SetServiceCollection] = useState([]);
-
-  const [partsCollection, setPartsCollection] = useState([]); //pode excluir apos ajeitar a lista de bookings
 
   const [partsName, setPartsName] = useState([]);
 
@@ -86,11 +84,18 @@ export default function ServiceScreen({ navigation }) {
     });
   };
 
-  const [sundays, setSundays] = useState();
-  const [busyDay, setBusyDay] = useState();
-  const [disableDays, SetDisableDays] = useState();
+  const [markedDays, setMarkedDays] = useState();
+  const [selectedDay, setSelectedDay] = useState();
+  const [updateAll, setupdateAll] = useState(false);
+  const [updateUser, setupdateUser] = useState(false);
+  const [bookings, setBookings] = useState();
+
+  let controllerDropService;
+  let controllerDropVehicle;
 
   const DisableSundays = () => {
+    const today = moment().format("YYYY-MM-DD");
+
     let month = new Date().getMonth();
     let year = new Date().getFullYear();
     let startDay = moment().day("1").month(month).year(year).startOf("month");
@@ -98,8 +103,8 @@ export default function ServiceScreen({ navigation }) {
       .month(month + 1)
       .year(year)
       .endOf("month");
-    console.log(startDay);
-    console.log(endMonth);
+    //console.log(startDay);
+    //console.log(endMonth);
     let disabledDates = {};
     while (startDay.isBefore(endMonth)) {
       disabledDates[startDay.day("Sunday").format("YYYY-MM-DD")] = {
@@ -108,10 +113,9 @@ export default function ServiceScreen({ navigation }) {
       };
       startDay.add(7, "days");
     }
-
-    SetDisableDays(disabledDates);
-    console.log(disabledDates);
-    // return disabledDates;
+    disabledDates[today] = { selected: true, selectedColor: "#EBF2FF" };
+    setMarkedDays({ ...markedDays, ...disabledDates });
+    setupdateAll(true);
   };
 
   const onFailure = async (error) => {
@@ -141,15 +145,16 @@ export default function ServiceScreen({ navigation }) {
             makeModel: obj.make + " " + obj.model,
           };
         });
+        result.push({ label: "", value: null });
         setVehicleVin(
           result.sort((a, b) =>
             a.value < b.value ? -1 : a.value > b.value ? 1 : 0
           )
         );
 
-        setVehicleCollection((vehicleCollection) =>
-          vehicleCollection.concat(vehicles)
-        );
+        // setVehicleCollection((vehicleCollection) =>
+        //   vehicleCollection.concat(vehicles)
+        //);
       })
       .catch(onFailure);
   };
@@ -169,6 +174,7 @@ export default function ServiceScreen({ navigation }) {
                 element.partName == obj.partName
             )
         );
+
         let partNameMap = [];
         result.map((obj) => {
           partNameMap.push({
@@ -177,6 +183,8 @@ export default function ServiceScreen({ navigation }) {
             cost: obj.cost,
           });
         });
+        partNameMap.push({ label: "", value: null });
+
         setPartsName(
           partNameMap.sort((a, b) =>
             a.value < b.value ? -1 : a.value > b.value ? 1 : 0
@@ -186,6 +194,81 @@ export default function ServiceScreen({ navigation }) {
       .catch(onFailure);
   };
 
+  const loadAllBookings = () => {
+    GetBookings()
+      .then((response) => {
+        let bookings;
+        let fullDay = {};
+
+        console.log(fullDay);
+        bookings = response.data.results;
+        bookings.map((obj) => {
+          if (obj.count > 3) {
+            fullDay[obj._id] = {
+              key: "busydays",
+              color: "red",
+              selected: true,
+              marked: true,
+              dayTextColor: "#F5F5F5",
+              disableTouchEvent: true,
+              dotColor: "red",
+              selectedColor: "#C7D4D7",
+            };
+          }
+        });
+        setBookings(fullDay);
+
+        setMarkedDays({ ...markedDays, ...fullDay });
+        setupdateUser(true);
+      })
+      .catch(onFailure);
+  };
+
+  const loadUserService = () => {
+    GetUserService()
+      .then((response) => {
+        console.log(response.data.users[0].services);
+        let services = response.data.users[0].services;
+        let currentDate = new Date().toISOString().substr(0, 10);
+        let selecteddays = {};
+        services.map((obj) => {
+          if (obj.date_in >= currentDate) {
+            selecteddays[obj.date_in] = {
+              key: "bookedday",
+              color: "#FFFF84",
+              selected: true,
+              marked: true,
+              dayTextColor: "#F5F5F5",
+              disableTouchEvent: true,
+              dotColor: "green",
+              selectedColor: "#FFFF84",
+            };
+          }
+        });
+        //  setBookings(selecteddays);
+
+        setMarkedDays({ ...markedDays, ...selecteddays });
+
+        SetServiceCollection(services);
+      })
+      .catch(onFailure);
+  };
+
+  //after sundays are marked in the calendar, it loads data of bookings to be marked in the calendar.
+  useEffect(() => {
+    if (updateAll) {
+      loadAllBookings();
+      setupdateAll(false);
+    }
+  }, [updateAll]);
+  useEffect(() => {
+    if (updateUser) {
+      loadUserService();
+      setupdateUser(false);
+    }
+  }, [updateUser]);
+
+  //load data from veihicles, services, and get all sundays of 2 months.
   useEffect(() => {
     DisableSundays();
 
@@ -233,31 +316,65 @@ export default function ServiceScreen({ navigation }) {
     console.log(navigation.state.params);
 
     console.log("ok");
-    /* if (
+    if (
       getValidation.description == "" &&
       getValidation.vin == "" &&
       getValidation.date_in == "" &&
       getValidation.serviceType == ""
     ) {
-    
-      // add booking
-      
-       
-      
-     
-    } */
+      //  let email = navigation.state.params.userEmail;
+      let status = "Pending";
+      AddService({ vin, date_in, serviceType, description, status })
+        .then((response) => {
+          console.log(response);
+          SetServiceCollection([]);
+
+          loadUserService();
+        })
+        .catch(onFailure);
+    }
   }
 
-  const CleanClick = () => {
-    let fullDay = {
-      "2021-01-18": {
-        disabled: true,
+  // to mark the selected day in the calendar, and remove the last selection
+  const ClickDay = (day) => {
+    let selectedday;
+    // check if it had a previous selected day, then it is set to selected false,
+    //and add the new selected day. Both are add in the useState array markedDays.
+    selectedday = {
+      [selectedDay ? selectedDay : ""]: {
+        selected: false,
+      },
+      [day]: {
+        selected: true,
         disableTouchEvent: true,
+        selectedColor: "#00adf5",
+        selectedTextColor: "C8D1E8",
       },
     };
 
-    console.log(disableDays);
-    SetDisableDays({ ...disableDays, ...fullDay });
+    setMarkedDays({ ...markedDays, ...selectedday });
+    setServiceData({
+      ...serviceData,
+      date_in: day,
+    });
+
+    //record the current selected day
+    setSelectedDay(day);
+  };
+
+  //clean dropdown picker and userinputs
+  const CleanClick = () => {
+    let selectedday;
+    // set the previous selected day to be selected false,
+    selectedday = {
+      [selectedDay ? selectedDay : ""]: {
+        selected: false,
+      },
+    };
+    setMarkedDays({ ...markedDays, ...selectedday });
+    controllerDropService.selectItem(null);
+    controllerDropVehicle.selectItem(null);
+
     setServiceData({
       vin: "",
       description: "",
@@ -309,83 +426,40 @@ export default function ServiceScreen({ navigation }) {
     }
   };
 
-  /* email: userEmail,
-        serviceId: serviceId,
-        vin: vin,
-        status: status,
-        description: description,
-        staff: staff,
-        service: service,
-        date_in: date_in, 
-        
-         tileDisabled={({ activeStartDate, date, view }) =>
-              priorityDays.some(
-                (day: any) => day.date !== moment(date).format("YYYY-MM-DD")
-              )
-            }
-
-<Calendar
-                tileDisabled={({ date, view }) =>
-                  view === "month" && // Block day tiles only
-                  date.getDay() === 0
-                }
-                tileClassName={({ date }) => {
-                  const isOnList = disabledDates.some((data, index) => {
-                    let datedata = new Date(data);
-                    let dateOne = new Date(
-                      new Date().getFullYear(),
-                      new Date().getMonth(),
-                      new Date().getDate() + 1
-                    );
-                    let datetwo = datedata;
-                    return dateOne === datetwo;
-                  });
-
-                  if (isOnList) {
-                    return "{background-color: blue; color: red !important;}";
-                  } else {
-                    return null;
-                  }
-                }}
-                onChange={SetValueDate}
-                value={valueDate}
-                maxDetail={"month"}
-                maxDate={dateSetting.maxDate}
-                minDate={dateSetting.minDate}
-              />
-
-        
-        */
-
   return (
     <View style={styles.container}>
-      <View style={[{ paddingTop: 10, paddingHorizontal: 20 }]}>
+      <NavigationEvents
+        onWillFocus={() => {
+          //     loadBookings();
+        }}
+        onWillBlur={() => {}}
+      />
+      <View style={[{ paddingTop: 10, paddingHorizontal: 10 }]}>
         <View>
           <View style={[{ justifyContent: "center", alignItems: "center" }]}>
             <View style={[{}]}>
               <Calendar
                 // Specify style for calendar container element. Default = {}
-
                 style={{
                   borderWidth: 1,
                   borderColor: "gray",
-                  height: 250,
+                  height: 280,
+                  width: 300,
                 }}
                 theme={{
-                  // textSectionTitleDisabledColor: "#d9e1e8",
-                  backgroundColor: "#ffffff",
-                  calendarBackground: "#ffffff",
-                  textSectionTitleColor: "#b6c1cd",
                   textSectionTitleDisabledColor: "#d9e1e8",
+                  backgroundColor: "#FAFFFF",
+                  calendarBackground: "#FAFFFF",
+                  textSectionTitleColor: "#b6c1cd",
                   selectedDayBackgroundColor: "#00adf5",
                   selectedDayTextColor: "blue",
                   todayTextColor: "#00adf5",
                   dayTextColor: "#2d4150",
-                  textDisabledColor: "#d9e1e8",
-                  dotColor: "#00adf5",
-                  selectedDotColor: "#ffffff",
-                  arrowColor: "#2d4150",
-                  disabledArrowColor: "#d9e1e8",
+                  //    textDisabledColor: "#d9e1e8",
+                  //  dotColor: "#00adf5",
+                  //   selectedDotColor: "#ffffff",
+                  // arrowColor: "#2d4150",
+                  //    disabledArrowColor: "#d9e1e8",
                   monthTextColor: "#2d4150",
                   indicatorColor: "#2d4150",
                   textDayFontFamily: "monospace",
@@ -394,30 +468,45 @@ export default function ServiceScreen({ navigation }) {
                   textDayFontWeight: "300",
                   textMonthFontWeight: "bold",
                   textDayHeaderFontWeight: "300",
-                  textDayFontSize: 14,
-                  textMonthFontSize: 14,
-                  textDayHeaderFontSize: 14,
+                  "stylesheet.calendar.main": {
+                    week: {
+                      marginTop: 2,
+                      marginBottom: 2,
+                      flexDirection: "row",
+                      justifyContent: "space-around",
+                    },
+                  },
                   "stylesheet.day.basic": {
+                    container: {
+                      alignSelf: "stretch",
+                      alignItems: "center",
+                      //   backgroundColor: "red",
+                      height: 60,
+                    },
                     base: {
-                      height: 20,
+                      overflow: "hidden",
+                      height: 35,
+                      width: 35,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    },
+                    selected: {
+                      borderRadius: 0,
                     },
                   },
                   "stylesheet.calendar.header": {
                     week: {
-                      marginTop: 0,
+                      marginTop: 5,
                       flexDirection: "row",
-                      justifyContent: "space-between",
+                      justifyContent: "space-around",
                     },
                     dayHeader: {
-                      marginTop: 0,
-                      marginBottom: 0,
-                      width: 35,
+                      width: 30,
                       textAlign: "center",
                     },
                   },
                 }}
                 firstDay={1}
-                // hideArrows={false}
                 hideExtraDays={true}
                 disableMonthChange={false}
                 current={new Date()}
@@ -437,16 +526,13 @@ export default function ServiceScreen({ navigation }) {
                     />
                   )
                 }
-                markedDates={{ ...disableDays }}
+                markedDates={{ ...markedDays }}
                 minDate={dateSetting.minDate}
                 maxDate={dateSetting.maxDate}
-                // disableAllTouchEventsForDisabledDays={true}
                 onDayPress={(day) => {
-                  setServiceData({
-                    ...serviceData,
-                    date_in: day.dateString,
-                  });
+                  ClickDay(day.dateString);
                 }}
+                markingType="custom"
               />
             </View>
           </View>
@@ -483,7 +569,6 @@ export default function ServiceScreen({ navigation }) {
               text=""
               placeholder="Pick a Day Above"
               value={serviceData.date_in}
-              // onChange={(e) => setServiceData({ ...serviceData, date_in: e })}
               keyboardtype={"default"}
               helperText={helperData.date_in} //to show errors
               editable={false}
@@ -509,6 +594,13 @@ export default function ServiceScreen({ navigation }) {
             <DropDownPicker
               items={vehicleVin}
               placeholder="Select"
+              defaultValue={""}
+              controller={(instance) => (controllerDropVehicle = instance)}
+              onChangeList={(items, callback) => {
+                new Promise((resolve, reject) => resolve(setVehicleVin(items)))
+                  .then(() => callback())
+                  .catch(() => {});
+              }}
               onChangeItem={(item) => {
                 setServiceData({
                   ...serviceData,
@@ -549,6 +641,13 @@ export default function ServiceScreen({ navigation }) {
             <DropDownPicker
               items={partsName}
               placeholder="Select"
+              defaultValue={""}
+              controller={(instance) => (controllerDropService = instance)}
+              onChangeList={(items, callback) => {
+                new Promise((resolve, reject) => resolve(setPartsName(items)))
+                  .then(() => callback())
+                  .catch(() => {});
+              }}
               onChangeItem={(item) => {
                 setServiceData({
                   ...serviceData,
@@ -588,17 +687,17 @@ export default function ServiceScreen({ navigation }) {
           style={[
             styles.viewStyle,
             {
-              height: 77,
+              height: 70,
             },
           ]}
         >
           <Userinput
             style={[{ paddingRight: 10 }]}
             styleInput={[{ width: 320 }]}
-            styleHelper={[]}
+            styleHelper={[{ paddingTop: 0 }]}
             maxLength={30}
             text="Description"
-            placeholder="Description"
+            placeholder="Describe the problem."
             value={serviceData.description}
             onChange={(e) => setServiceData({ ...serviceData, description: e })}
             keyboardtype={"default"}
@@ -610,8 +709,9 @@ export default function ServiceScreen({ navigation }) {
             styles.viewStyle,
             {
               flexDirection: "row",
-
-              height: 77,
+              height: 25,
+              paddingTop: 10,
+              justifyContent: "flex-end",
             },
           ]}
         >
@@ -643,62 +743,65 @@ export default function ServiceScreen({ navigation }) {
             <Text style={[styles.headerTitle]}>Bookings:</Text>
             <Text style={styles.count}>{serviceCollection.length} items</Text>
           </View>
-          <View style={[{}]}>
-            {serviceCollection.slug == "" ? (
-              <Text>""</Text>
-            ) : (
-              serviceCollection &&
-              serviceCollection.map((element, index) => {
-                let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
-                return (
-                  <View
-                    key={index}
-                    style={[styles.blockParts, { backgroundColor: color }]}
-                  >
-                    <SafeAreaView>
-                      <ScrollView>
-                        <View style={{ flex: 1 }}>
-                          <View style={{ maxWidth: 320 }}>
-                            <Text style={styles.partsText}>
-                              id: {element.slug}
-                              {"  "}Name: {element.partName}
-                            </Text>
-                            <Text style={styles.partsText}>
-                              {"  "}Category: {element.category}
-                              {"  "}Make: {element.make}
-                            </Text>
-                            <Text style={styles.partsText}>
-                              {"  "}Model: {element.model}
-                              {"  "}Cost: {element.cost}
-                            </Text>
-                          </View>
-                          <View>
-                            <BTN
-                              style={styles.smallBtn}
-                              styleCaption={styles.smallBtnText}
-                              text="Edit"
-                              onPress={() => {
-                                //   EditClick(index);
-                              }}
-                            ></BTN>
+          <>
+            <ScrollView>
+              <View style={[{}]}>
+                {serviceCollection.slug == "" ? (
+                  <Text>""</Text>
+                ) : (
+                  serviceCollection &&
+                  serviceCollection.map((element, index) => {
+                    let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
+                    return (
+                      <View
+                        key={index}
+                        style={[styles.blockParts, { backgroundColor: color }]}
+                      >
+                        <SafeAreaView>
+                          <ScrollView>
+                            <View style={{ flexDirection: "row" }}>
+                              <View style={{ maxWidth: 320 }}>
+                                <Text style={styles.partsText}>
+                                  Booking: {element.date_in}
+                                  {"  "}Status: {element.status}
+                                </Text>
+                                <Text style={styles.partsText}>
+                                  {"  "}VIN: {element.vin}
+                                  {"  "}Service Type: {element.serviceType}
+                                </Text>
+                                <Text style={styles.partsText}>
+                                  {"  "}Description: {element.model}
+                                </Text>
+                              </View>
+                              <View>
+                                <BTN
+                                  style={styles.smallBtn}
+                                  styleCaption={styles.smallBtnText}
+                                  text="Edit"
+                                  onPress={() => {
+                                    //   EditClick(index);
+                                  }}
+                                ></BTN>
 
-                            <BTN
-                              style={styles.smallBtn}
-                              styleCaption={styles.smallBtnText}
-                              text="Del"
-                              onPress={() => {
-                                //DelClick({ slug: element.slug });
-                              }}
-                            />
-                          </View>
-                        </View>
-                      </ScrollView>
-                    </SafeAreaView>
-                  </View>
-                );
-              })
-            )}
-          </View>
+                                <BTN
+                                  style={styles.smallBtn}
+                                  styleCaption={styles.smallBtnText}
+                                  text="Del"
+                                  onPress={() => {
+                                    //DelClick({ slug: element.slug });
+                                  }}
+                                />
+                              </View>
+                            </View>
+                          </ScrollView>
+                        </SafeAreaView>
+                      </View>
+                    );
+                  })
+                )}
+              </View>
+            </ScrollView>
+          </>
         </View>
       </View>
     </View>
@@ -723,7 +826,7 @@ const styles = StyleSheet.create({
   btn: {
     height: 25,
     width: 80,
-    marginTop: 50,
+
     paddingRight: 10,
   },
 
@@ -745,7 +848,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 5,
     textAlign: "left",
-    width: 300,
+    width: 280,
     marginHorizontal: 10,
   },
 
@@ -768,7 +871,7 @@ const styles = StyleSheet.create({
   },
 
   boxService: {
-    marginTop: 30,
+    marginTop: 20,
     backgroundColor: "#E6E6E6",
     width: "100%",
   },
