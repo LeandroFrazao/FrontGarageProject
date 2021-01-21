@@ -18,13 +18,12 @@ import moment from "moment";
 
 import {
   GetParts,
-  AddParts,
-  DeletePart,
-  UpdatePart,
+  DeleteService,
   GetUserService,
   GetUserVehicles,
   GetBookings,
   AddService,
+  UpdateService,
 } from "../services/APIConnect";
 
 import { NavigationEvents } from "react-navigation";
@@ -55,8 +54,8 @@ export default function ServiceScreen({ navigation }) {
     makeModel: "",
     cost: "",
   });
-  const [serviceCollection, SetServiceCollection] = useState([]);
-
+  const [serviceCollection, setServiceCollection] = useState([]);
+  const [oldServicesCollection, setOldServicesCollection] = useState([]);
   const [partsName, setPartsName] = useState([]);
 
   const [helperData, setHelperData] = useState({
@@ -85,10 +84,12 @@ export default function ServiceScreen({ navigation }) {
   };
 
   const [markedDays, setMarkedDays] = useState();
-  const [selectedDay, setSelectedDay] = useState();
+  const [selectedDay, setSelectedDay] = useState({
+    day: "",
+    options: "",
+  });
   const [updateAll, setupdateAll] = useState(false);
   const [updateUser, setupdateUser] = useState(false);
-  const [bookings, setBookings] = useState();
 
   let controllerDropService;
   let controllerDropVehicle;
@@ -103,8 +104,6 @@ export default function ServiceScreen({ navigation }) {
       .month(month + 1)
       .year(year)
       .endOf("month");
-    //console.log(startDay);
-    //console.log(endMonth);
     let disabledDates = {};
     while (startDay.isBefore(endMonth)) {
       disabledDates[startDay.day("Sunday").format("YYYY-MM-DD")] = {
@@ -125,6 +124,20 @@ export default function ServiceScreen({ navigation }) {
       console.log(error.response);
       if (error && error.response.data.error) {
         console.log(error.response.data.error);
+        if (Platform.OS == "web") {
+          window.alert(error.response.data.error);
+        } else {
+          Alert.alert(
+            error.response.data.error,
+            "Sorry?",
+            [
+              {
+                text: "OK",
+              },
+            ],
+            { cancelable: false }
+          );
+        }
       } else if (error.response.data.Security) {
         console.log(error.response.data.Security);
       }
@@ -133,7 +146,7 @@ export default function ServiceScreen({ navigation }) {
 
   const loadUserVehicles = () => {
     let userEmail = navigation.state.params.userEmail;
-    //console.log("loaduserVehicles " + userEmail);
+
     GetUserVehicles(userEmail)
       .then((response) => {
         let vehicles = [];
@@ -151,10 +164,6 @@ export default function ServiceScreen({ navigation }) {
             a.value < b.value ? -1 : a.value > b.value ? 1 : 0
           )
         );
-
-        // setVehicleCollection((vehicleCollection) =>
-        //   vehicleCollection.concat(vehicles)
-        //);
       })
       .catch(onFailure);
   };
@@ -162,8 +171,6 @@ export default function ServiceScreen({ navigation }) {
   const loadServiceType = () => {
     GetParts()
       .then((response) => {
-        //  console.log(response.data.parts);
-        // console.log(response);
         let parts = response.data.parts;
         let result = parts.filter(
           (element, index) =>
@@ -194,18 +201,18 @@ export default function ServiceScreen({ navigation }) {
       .catch(onFailure);
   };
 
+  //load all bookings from all users to the calendar
   const loadAllBookings = () => {
     GetBookings()
       .then((response) => {
         let bookings;
         let fullDay = {};
 
-        console.log(fullDay);
         bookings = response.data.results;
         bookings.map((obj) => {
           if (obj.count > 3) {
             fullDay[obj._id] = {
-              key: "busydays",
+              key: obj.count,
               color: "red",
               selected: true,
               marked: true,
@@ -214,9 +221,22 @@ export default function ServiceScreen({ navigation }) {
               dotColor: "red",
               selectedColor: "#C7D4D7",
             };
+          } else if (obj.count == 3) {
+            fullDay[obj._id] = {
+              key: obj.count,
+              marked: true,
+              dayTextColor: "#F5F5F5",
+              dotColor: "orange",
+            };
+          } else if (obj.count >= 1) {
+            fullDay[obj._id] = {
+              key: obj.count,
+              marked: true,
+              dayTextColor: "#F5F5F5",
+              dotColor: "#ECE515",
+            };
           }
         });
-        setBookings(fullDay);
 
         setMarkedDays({ ...markedDays, ...fullDay });
         setupdateUser(true);
@@ -224,15 +244,19 @@ export default function ServiceScreen({ navigation }) {
       .catch(onFailure);
   };
 
-  const loadUserService = () => {
+  const loadServiceCollection = () => {
     GetUserService()
       .then((response) => {
-        console.log(response.data.users[0].services);
+        // console.log(response.data.users[0].services);
         let services = response.data.users[0].services;
         let currentDate = new Date().toISOString().substr(0, 10);
         let selecteddays = {};
+        let currentBookings = [];
+        let oldBookings = [];
         services.map((obj) => {
           if (obj.date_in >= currentDate) {
+            currentBookings.push(obj);
+
             selecteddays[obj.date_in] = {
               key: "bookedday",
               color: "#FFFF84",
@@ -243,13 +267,14 @@ export default function ServiceScreen({ navigation }) {
               dotColor: "green",
               selectedColor: "#FFFF84",
             };
-          }
+          } else oldBookings.push(obj);
         });
-        //  setBookings(selecteddays);
-
+        // days to be marked in the calendar
         setMarkedDays({ ...markedDays, ...selecteddays });
-
-        SetServiceCollection(services);
+        // data of current bookings to be mapped to user screen
+        setServiceCollection(currentBookings);
+        // data of old bookings to be mapped to user screen
+        setOldServicesCollection(oldBookings);
       })
       .catch(onFailure);
   };
@@ -263,7 +288,7 @@ export default function ServiceScreen({ navigation }) {
   }, [updateAll]);
   useEffect(() => {
     if (updateUser) {
-      loadUserService();
+      loadServiceCollection();
       setupdateUser(false);
     }
   }, [updateUser]);
@@ -278,20 +303,29 @@ export default function ServiceScreen({ navigation }) {
 
   const validateData = ({ prop, item }) => {
     let toReturn = {};
-    console.log(prop, item);
+
     if (!prop && prop == "") {
       if (item == "Vehicle" || item == "Service Type" || item == "Date")
         toReturn = "Select " + item;
       else if (item == "description")
         toReturn = "Give a short description of the problem.";
       else toReturn = "";
+    } else if (item == "Vehicle") {
+      //check if there is any VIN already booked.
+      serviceCollection.some((obj) => {
+        {
+          if (obj.vin === prop) {
+            toReturn = "Already booked on " + obj.date_in + ".";
+          } else toReturn = "";
+        }
+      });
     } else toReturn = "";
     return toReturn;
   };
 
   // add new part
   function AddClick({ vin, serviceType, date_in, description }) {
-    console.log(vin, serviceType, date_in, description);
+    //  console.log(vin, serviceType, date_in, description);
 
     let getValidation = {};
     getValidation.description = validateData({
@@ -311,29 +345,49 @@ export default function ServiceScreen({ navigation }) {
       date_in: getValidation.date_in,
       serviceType: getValidation.serviceType,
     });
-    console.log(getValidation);
-    // let email = navigation.state.params.vehicle.email;
-    console.log(navigation.state.params);
 
-    console.log("ok");
     if (
       getValidation.description == "" &&
       getValidation.vin == "" &&
       getValidation.date_in == "" &&
       getValidation.serviceType == ""
     ) {
-      //  let email = navigation.state.params.userEmail;
-      let status = "Pending";
-      AddService({ vin, date_in, serviceType, description, status })
-        .then((response) => {
-          console.log(response);
-          SetServiceCollection([]);
-
-          loadUserService();
-        })
-        .catch(onFailure);
+      if (Platform.OS == "web") {
+        if (confirm("Confirm Booking at " + date_in + " ?")) {
+          addbooking({ vin, date_in, serviceType, description });
+        }
+      } else {
+        Alert.alert(
+          "Confirm Booking at " + date_in,
+          "Confirm?",
+          [
+            {
+              text: "Cancel",
+              style: "cancel",
+            },
+            {
+              text: "OK",
+              onPress: () => {
+                addbooking({ vin, date_in, serviceType, description });
+              },
+            },
+          ],
+          { cancelable: false }
+        );
+      }
     }
   }
+
+  const addbooking = ({ vin, date_in, serviceType, description }) => {
+    AddService({ vin, date_in, serviceType, description })
+      .then((response) => {
+        setServiceCollection([]);
+        setOldServicesCollection([]);
+        loadServiceCollection();
+        CleanClick();
+      })
+      .catch(onFailure);
+  };
 
   // to mark the selected day in the calendar, and remove the last selection
   const ClickDay = (day) => {
@@ -341,9 +395,8 @@ export default function ServiceScreen({ navigation }) {
     // check if it had a previous selected day, then it is set to selected false,
     //and add the new selected day. Both are add in the useState array markedDays.
     selectedday = {
-      [selectedDay ? selectedDay : ""]: {
-        selected: false,
-      },
+      [selectedDay ? selectedDay.day : ""]: selectedDay.options,
+
       [day]: {
         selected: true,
         disableTouchEvent: true,
@@ -351,7 +404,6 @@ export default function ServiceScreen({ navigation }) {
         selectedTextColor: "C8D1E8",
       },
     };
-
     setMarkedDays({ ...markedDays, ...selectedday });
     setServiceData({
       ...serviceData,
@@ -359,7 +411,7 @@ export default function ServiceScreen({ navigation }) {
     });
 
     //record the current selected day
-    setSelectedDay(day);
+    setSelectedDay({ day: day, options: markedDays[day] });
   };
 
   //clean dropdown picker and userinputs
@@ -392,22 +444,48 @@ export default function ServiceScreen({ navigation }) {
     });
   };
 
-  // update Booking
-  const UpdateClick = async ({}) => {};
-
-  const EditClick = async (index) => {};
-  const deletePart = async ({ slug }) => {
-    console.log(slug + " deleted");
+  const updateService = ({
+    serviceType,
+    vin,
+    date_in,
+    description,
+    serviceId,
+  }) => {
+    let email = navigation.state.params.userEmail;
+    UpdateService({ serviceType, vin, date_in, description, email, serviceId })
+      .then((result) => {
+        console.log(result);
+        setBtnOption({ add: true, update: false });
+        setServiceCollection([]);
+        setOldServicesCollection([]);
+        loadServiceCollection();
+        CleanClick();
+      })
+      .catch(onFailure);
   };
 
-  const DelClick = ({ slug }) => {
+  // update Booking
+  const UpdateClick = async ({
+    serviceType,
+    vin,
+    date_in,
+    description,
+    serviceId,
+  }) => {
     if (Platform.OS == "web") {
-      if (confirm("Confirm to delete Part: " + slug + " ?")) {
-        deletePart({ slug: slug });
+      if (confirm("Update booking on " + date_in + " ?")) {
+        updateService({
+          serviceType,
+          vin,
+          date_in,
+          description,
+
+          serviceId,
+        });
       }
     } else {
       Alert.alert(
-        "Delete Part: " + slug,
+        "Update booking on " + date_in,
         "Confirm?",
         [
           {
@@ -417,7 +495,84 @@ export default function ServiceScreen({ navigation }) {
           {
             text: "OK",
             onPress: () => {
-              deletePart({ slug: slug });
+              updateService({
+                serviceType,
+                vin,
+                date_in,
+                description,
+
+                serviceId,
+              });
+            },
+          },
+        ],
+        { cancelable: false }
+      );
+    }
+  };
+
+  const EditClick = async (index) => {
+    console.log(serviceCollection[index]);
+    setBtnOption({ add: false, update: true });
+    setHelperData({ ...helperData, error: "" });
+    controllerDropService.selectItem(serviceCollection[index].serviceType);
+    controllerDropVehicle.selectItem(serviceCollection[index].vin);
+    setServiceData({
+      vin: serviceCollection[index].vin,
+      serviceType: serviceCollection[index].serviceType,
+      date_in: serviceCollection[index].date_in,
+      cost: serviceCollection[index].cost,
+      description: serviceCollection[index].description,
+      makeModel: serviceCollection[index].makeModel,
+      serviceId: serviceCollection[index].serviceId,
+    });
+  };
+
+  const deleteService = ({ serviceId }) => {
+    console.log(serviceId + " deleted");
+    let email = navigation.state.params.userEmail;
+
+    DeleteService({ serviceId, email })
+      .then((response) => {
+        setServiceCollection(
+          serviceCollection.filter((element) => element.serviceId !== serviceId)
+        );
+      })
+      .catch(onFailure);
+  };
+  const deleteOldService = ({ serviceId }) => {
+    console.log(serviceId + " deleted");
+    let email = navigation.state.params.userEmail;
+
+    DeleteService({ serviceId, email })
+      .then((response) => {
+        setOldServicesCollection(
+          oldServicesCollection.filter(
+            (element) => element.serviceId !== serviceId
+          )
+        );
+      })
+      .catch(onFailure);
+  };
+
+  const DelClick = ({ serviceId, date_in }) => {
+    if (Platform.OS == "web") {
+      if (confirm("Cancel booking on " + date_in + " ?")) {
+        deleteService({ serviceId: serviceId });
+      }
+    } else {
+      Alert.alert(
+        "Cancel booking on " + date_in,
+        "Confirm?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "OK",
+            onPress: () => {
+              deleteService({ serviceId: serviceId });
             },
           },
         ],
@@ -455,11 +610,6 @@ export default function ServiceScreen({ navigation }) {
                   selectedDayTextColor: "blue",
                   todayTextColor: "#00adf5",
                   dayTextColor: "#2d4150",
-                  //    textDisabledColor: "#d9e1e8",
-                  //  dotColor: "#00adf5",
-                  //   selectedDotColor: "#ffffff",
-                  // arrowColor: "#2d4150",
-                  //    disabledArrowColor: "#d9e1e8",
                   monthTextColor: "#2d4150",
                   indicatorColor: "#2d4150",
                   textDayFontFamily: "monospace",
@@ -588,7 +738,14 @@ export default function ServiceScreen({ navigation }) {
           ]}
         >
           <View
-            style={[{ position: "relative", height: 74, paddingRight: 20 }]}
+            style={[
+              {
+                position: "relative",
+                height: 74,
+                width: 180,
+                //   paddingRight: 40,
+              },
+            ]}
           >
             <Text style={[styles.label]}>Vehicle: {serviceData.makeModel}</Text>
             <DropDownPicker
@@ -717,7 +874,7 @@ export default function ServiceScreen({ navigation }) {
         >
           <BTN
             style={styles.btn}
-            text={btnOption.add == true ? "Confirm" : "Update"}
+            text={btnOption.add == true ? "Add" : "Update"}
             onPress={() => {
               btnOption.add
                 ? AddClick({
@@ -726,7 +883,13 @@ export default function ServiceScreen({ navigation }) {
                     date_in: serviceData.date_in,
                     description: serviceData.description,
                   })
-                : UpdateClick();
+                : UpdateClick({
+                    serviceType: serviceData.serviceType,
+                    vin: serviceData.vin,
+                    date_in: serviceData.date_in,
+                    description: serviceData.description,
+                    serviceId: serviceData.serviceId,
+                  });
             }}
           ></BTN>
           <BTN
@@ -741,20 +904,22 @@ export default function ServiceScreen({ navigation }) {
         <View style={[styles.boxService]}>
           <View style={[styles.headerService]}>
             <Text style={[styles.headerTitle]}>Bookings:</Text>
-            <Text style={styles.count}>{serviceCollection.length} items</Text>
+            <Text style={styles.count}>
+              {serviceCollection.length} bookings
+            </Text>
           </View>
           <>
             <ScrollView>
-              <View style={[{}]}>
-                {serviceCollection.slug == "" ? (
-                  <Text>""</Text>
+              <View>
+                {serviceCollection.count == 0 ? (
+                  <Text></Text>
                 ) : (
                   serviceCollection &&
                   serviceCollection.map((element, index) => {
                     let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
                     return (
                       <View
-                        key={index}
+                        key={element._id}
                         style={[styles.blockParts, { backgroundColor: color }]}
                       >
                         <SafeAreaView>
@@ -770,7 +935,7 @@ export default function ServiceScreen({ navigation }) {
                                   {"  "}Service Type: {element.serviceType}
                                 </Text>
                                 <Text style={styles.partsText}>
-                                  {"  "}Description: {element.model}
+                                  {"  "}Description: {element.description}
                                 </Text>
                               </View>
                               <View>
@@ -779,7 +944,7 @@ export default function ServiceScreen({ navigation }) {
                                   styleCaption={styles.smallBtnText}
                                   text="Edit"
                                   onPress={() => {
-                                    //   EditClick(index);
+                                    EditClick(index);
                                   }}
                                 ></BTN>
 
@@ -788,7 +953,10 @@ export default function ServiceScreen({ navigation }) {
                                   styleCaption={styles.smallBtnText}
                                   text="Del"
                                   onPress={() => {
-                                    //DelClick({ slug: element.slug });
+                                    DelClick({
+                                      serviceId: element.serviceId,
+                                      date_in: element.date_in,
+                                    });
                                   }}
                                 />
                               </View>
@@ -802,6 +970,75 @@ export default function ServiceScreen({ navigation }) {
               </View>
             </ScrollView>
           </>
+          <View
+            style={[
+              { marginTop: 10, borderTopWidth: 2, borderTopColor: "white" },
+            ]}
+          >
+            <View style={[styles.headerService]}>
+              <Text style={[styles.headerTitle]}>Old Bookings:</Text>
+              <Text style={styles.count}>
+                {oldServicesCollection.length} bookings
+              </Text>
+            </View>
+            <>
+              <ScrollView>
+                <View>
+                  {oldServicesCollection.length == 0 ? (
+                    <Text> </Text>
+                  ) : (
+                    oldServicesCollection &&
+                    oldServicesCollection.map((element, index) => {
+                      let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
+
+                      return (
+                        <View
+                          key={element._id}
+                          style={[
+                            styles.blockParts,
+                            { backgroundColor: color },
+                          ]}
+                        >
+                          <SafeAreaView>
+                            <ScrollView>
+                              <View style={{ flexDirection: "row" }}>
+                                <View style={{ maxWidth: 320 }}>
+                                  <Text style={styles.partsText}>
+                                    Booking: {element.date_in}
+                                    {"  "}Status: {element.status}
+                                  </Text>
+                                  <Text style={styles.partsText}>
+                                    {"  "}VIN: {element.vin}
+                                    {"  "}Service Type: {element.serviceType}
+                                  </Text>
+                                  <Text style={styles.partsText}>
+                                    {"  "}Description: {element.description}
+                                  </Text>
+                                </View>
+                                <View>
+                                  <BTN
+                                    style={styles.smallBtn}
+                                    styleCaption={styles.smallBtnText}
+                                    text="Del"
+                                    onPress={() => {
+                                      deleteOldService({
+                                        serviceId: element.serviceId,
+                                        date_in: element.date_in,
+                                      });
+                                    }}
+                                  />
+                                </View>
+                              </View>
+                            </ScrollView>
+                          </SafeAreaView>
+                        </View>
+                      );
+                    })
+                  )}
+                </View>
+              </ScrollView>
+            </>
+          </View>
         </View>
       </View>
     </View>

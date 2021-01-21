@@ -6,7 +6,7 @@ import { StyleSheet, View, Text, Platform } from "react-native";
 import Userinput from "../components/Userinput";
 import BTN from "../components/BTN";
 import { GetParts, AddVehicles } from "../services/APIConnect";
-import DropList from "../components/DropList";
+
 import DropDownPicker from "react-native-dropdown-picker";
 
 export default function AddVehicleScreen({ navigation }) {

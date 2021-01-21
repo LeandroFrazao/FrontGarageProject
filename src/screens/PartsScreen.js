@@ -20,7 +20,6 @@ import {
   DeletePart,
   UpdatePart,
 } from "../services/APIConnect";
-import DropList from "../components/DropList";
 import { NavigationEvents } from "react-navigation";
 
 export default function PartsScreen({ navigation }) {
@@ -398,7 +397,6 @@ export default function PartsScreen({ navigation }) {
             value={partsData.category}
             onChange={(e) => setPartsData({ ...partsData, category: e })}
             keyboardtype={"default"}
-            //   helperText={helperData.category} //to show errors
           ></Userinput>
 
           <Userinput
@@ -411,7 +409,6 @@ export default function PartsScreen({ navigation }) {
             value={partsData.make}
             onChange={(e) => setPartsData({ ...partsData, make: e })}
             keyboardtype={"default"}
-            //  helperText={helperData.make} //to show errors
           ></Userinput>
 
           <Userinput
@@ -424,7 +421,6 @@ export default function PartsScreen({ navigation }) {
             value={partsData.model}
             onChange={(e) => setPartsData({ ...partsData, model: e })}
             keyboardtype={"default"}
-            // helperText={helperData.model} //to show errors
           ></Userinput>
         </View>
         <View

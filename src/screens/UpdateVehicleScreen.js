@@ -1,14 +1,14 @@
 import React from "react";
 
 import { useState, useEffect } from "react";
-import { StyleSheet, View, Text } from "react-native";
+import { StyleSheet, View, Text, Platform } from "react-native";
 
 import Userinput from "../components/Userinput";
 import BTN from "../components/BTN";
 
 import { GetParts, UpdateVehicle } from "../services/APIConnect";
-import DropList from "../components/DropList";
-import { NavigationEvents } from "react-navigation";
+
+import DropDownPicker from "react-native-dropdown-picker";
 
 export default function UpdateVehicleScreen({ navigation }) {
   const [vehicleData, setVehicleData] = useState({
@@ -96,6 +96,7 @@ export default function UpdateVehicleScreen({ navigation }) {
 
   const loadVehicle = () => {
     let vehicle = navigation.state.params.vehicle;
+    console.log(vehicle);
     setVehicleMake([{ label: vehicle.make, value: vehicle.make }]);
     setVehicleData({
       email: vehicle.email,
@@ -194,78 +195,114 @@ export default function UpdateVehicleScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <NavigationEvents
-        onWillFocus={() => {
-          console.log("will Focus");
-          // let vehicle = navigation.state.params.vehicle;
-          //  setVehicleMake([{ label: vehicle.make, value: vehicle.make }]);
-          // loadParts();
-        }}
-      />
-      <View style={styles.bodyLogin}>
+      <View style={styles.body}>
         <View
           style={[
             styles.viewStyle,
             {
               flexDirection: "row",
-              borderColor: "yellow",
-              borderWidth: 2,
-              zIndex: 20,
+              width: 270,
+
+              ...(Platform.OS !== "android" && { zIndex: 90 }),
             },
           ]}
         >
-          <DropList
-            label="Type of Vehicle: "
-            helperText={helperData.type}
-            items={vehicleType}
-            style={[styles.dropListStyle, { paddingRight: 5 }]}
-            placeholder="Select the Type"
-            defaultValue={vehicleData.type}
-            onChangeItem={(item) => {
-              setVehicleData({ ...vehicleData, type: item.value });
-            }}
-            isVisible={dropList.isVisibleType}
-            onOpen={() => changeVisibility({ isVisibleType: true })}
-            onClose={() =>
-              setDropList({
-                isVisibleType: false,
-              })
-            }
-          />
-          <DropList
-            label="Make: "
-            helperText={helperData.make}
-            items={vehicleMake}
-            style={[styles.dropListStyle, { paddingLeft: 5 }]}
-            placeholder="Select the Make"
-            defaultValue={vehicleData.make}
-            onChangeItem={(item) => {
-              console.log(item),
-                setVehicleData({ ...vehicleData, make: item.value });
-            }}
-            isVisible={dropList.isVisibleMake}
-            onOpen={() => changeVisibility({ isVisibleMake: true })}
-            onClose={() =>
-              setDropList({
-                isVisibleMake: false,
-              })
-            }
-          />
+          <View
+            style={[{ position: "relative", height: 74, paddingRight: 10 }]}
+          >
+            <Text style={[styles.label]}>Vehicle Type </Text>
+            <DropDownPicker
+              items={vehicleType}
+              placeholder="Select the Type"
+              defaultValue={vehicleData.type}
+              onChangeItem={(item) => {
+                setVehicleData({ ...vehicleData, type: item.value });
+              }}
+              isVisible={dropList.isVisibleType}
+              onOpen={() => changeVisibility({ isVisibleType: true })}
+              onClose={() =>
+                setDropList({
+                  isVisibleType: false,
+                })
+              }
+              containerStyle={[
+                {
+                  height: 40,
+                  width: 130,
+                },
+              ]}
+              style={[
+                styles.dropListStyle,
+                { backgroundColor: "#fafafa", paddingRight: 5 },
+              ]}
+              itemStyle={{
+                justifyContent: "flex-start",
+              }}
+              labelStyle={{
+                fontSize: 14,
+                textAlign: "left",
+                color: "blue",
+              }}
+              zIndex={7000}
+              dropDownStyle={[{ marginTop: 1, backgroundColor: "#fafafa" }]}
+            />
+            <Text style={[styles.helper]}>{helperData.type}</Text>
+          </View>
+
+          <View style={[{ position: "relative", height: 74 }]}>
+            <Text style={[styles.label]}>Make: </Text>
+            <DropDownPicker
+              items={vehicleMake}
+              placeholder="Select the Make"
+              defaultValue={vehicleData.make}
+              onChangeItem={(item) => {
+                console.log(item),
+                  setVehicleData({ ...vehicleData, make: item.value });
+              }}
+              isVisible={dropList.isVisibleMake}
+              onOpen={() => changeVisibility({ isVisibleMake: true })}
+              onClose={() =>
+                setDropList({
+                  isVisibleMake: false,
+                })
+              }
+              containerStyle={[
+                {
+                  height: 40,
+                  width: 130,
+                },
+              ]}
+              style={[
+                styles.dropListStyle,
+                { backgroundColor: "#fafafa", paddingLeft: 5 },
+              ]}
+              itemStyle={{
+                justifyContent: "flex-start",
+              }}
+              labelStyle={{
+                fontSize: 14,
+                textAlign: "left",
+                color: "blue",
+              }}
+              zIndex={6000}
+              dropDownStyle={[{ marginTop: 1, backgroundColor: "#fafafa" }]}
+            />
+            <Text style={[styles.helper]}>{helperData.make}</Text>
+          </View>
         </View>
 
         <View
           style={[
             styles.viewStyle,
             {
-              borderColor: "yellow",
-              borderWidth: 2,
               flexDirection: "row",
-              zIndex: 19,
+              ...(Platform.OS !== "android" && { zIndex: 80 }),
             },
           ]}
         >
           <Userinput
             style={[styles.styleTextBox1, { paddingRight: 20 }]}
+            styleLabel={[styles.label, { paddingTop: 0 }]}
             styleInput={{ width: 120 }}
             maxLength={10}
             text="Model"
@@ -276,39 +313,56 @@ export default function UpdateVehicleScreen({ navigation }) {
             helperText={helperData.model} //to show errors
           ></Userinput>
 
-          <DropList
-            label="Engine: "
-            helperText={helperData.engine}
-            items={vehicleEngine}
-            style={styles.dropListStyle}
-            placeholder="Select the Engine"
-            defaultValue={vehicleData.engine}
-            onChangeItem={(item) => {
-              console.log(item),
-                setVehicleData({ ...vehicleData, engine: item.value });
-            }}
-            isVisible={dropList.isVisibleEngine}
-            onOpen={() => changeVisibility({ isVisibleEngine: true })}
-            onClose={() =>
-              setDropList({
-                isVisibleEngine: false,
-              })
-            }
-          />
+          <View style={[{ position: "relative", height: 74 }]}>
+            <Text style={[styles.label]}>Engine: </Text>
+            <DropDownPicker
+              items={vehicleEngine}
+              placeholder="Select the Engine"
+              defaultValue={vehicleData.engine}
+              onChangeItem={(item) => {
+                console.log(item),
+                  setVehicleData({ ...vehicleData, engine: item.value });
+              }}
+              containerStyle={[
+                {
+                  height: 40,
+                  width: 130,
+                },
+              ]}
+              style={[styles.dropListStyle, { backgroundColor: "#fafafa" }]}
+              itemStyle={{
+                justifyContent: "flex-start",
+              }}
+              labelStyle={{
+                fontSize: 14,
+                textAlign: "left",
+                color: "blue",
+              }}
+              zIndex={5000}
+              dropDownStyle={[{ marginTop: 2, backgroundColor: "#fafafa" }]}
+              isVisible={dropList.isVisibleEngine}
+              onOpen={() => changeVisibility({ isVisibleEngine: true })}
+              onClose={() =>
+                setDropList({
+                  isVisibleEngine: false,
+                })
+              }
+            />
+            <Text style={[styles.helper]}>{helperData.engine}</Text>
+          </View>
         </View>
         <View
           style={[
             styles.viewStyle,
             {
-              borderColor: "yellow",
-              borderWidth: 2,
               flexDirection: "row",
-              zIndex: 8,
+              width: 270,
             },
           ]}
         >
           <Userinput
-            style={[styles.styleTextBox1, { paddingRight: 34 }]}
+            style={[styles.styleTextBox1, { paddingRight: 10 }]}
+            styleLabel={[styles.label, { paddingTop: 0 }]}
             styleInput={{ width: 80 }}
             maxLength={4}
             text="Year"
@@ -318,8 +372,10 @@ export default function UpdateVehicleScreen({ navigation }) {
             keyboardtype={"default"}
             helperText={helperData.year} //to show errors
           ></Userinput>
+
           <Userinput
             style={styles.styleTextBox1}
+            styleLabel={[styles.label, { paddingTop: 0, width: 180 }]}
             styleInput={{ width: 120 }}
             maxLength={10}
             text="Vehicle Identification Number"
@@ -355,14 +411,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  bodyLogin: {
+  body: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 5,
-    //   marginTop: -80,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
   },
   boxTitle: {
-    backgroundColor: "#E6E6E6",
+    //    backgroundColor: "#E6E6E6",
     width: "100%",
     height: 96,
     justifyContent: "center",
@@ -375,16 +431,7 @@ const styles = StyleSheet.create({
   },
   styleTextBox1: {
     height: 74,
-
-    //width: 275,
     marginTop: 5,
-    //  marginLeft: 43,
-  },
-  styleTextBox2: {
-    height: 74,
-    // width: 275,
-    marginTop: 5,
-    //  marginLeft: 43,
   },
   btn: {
     height: 36,
@@ -395,28 +442,22 @@ const styles = StyleSheet.create({
   dropListStyle: {
     height: 100,
     fontSize: 12,
-    //paddingBottom: 50,
-    // borderColor: "red",
-    //borderWidth: 2,
-    //  height: 100,
   },
 
   viewStyle: {
     paddingTop: 20,
-    //height: 100,
-    //fontSize: 12,
-    // marginTop: 5,
-    // textAlign: "left",
-    // paddingTop: 10,
   },
   helper: {
     fontSize: 12,
     textAlign: "left",
     color: "red",
     opacity: 0.6,
-    borderColor: "red",
-    borderWidth: 2,
-
-    // paddingBottom: 20,
+  },
+  label: {
+    fontSize: 12,
+    textAlign: "left",
+    color: "#000",
+    opacity: 0.6,
+    width: 100,
   },
 });

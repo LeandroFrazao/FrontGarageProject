@@ -174,7 +174,7 @@ export default function UserScreen({ navigation }) {
                 let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
                 return (
                   <View
-                    key={index}
+                    key={element._id}
                     style={(styles.blockVehicle, { backgroundColor: color })}
                   >
                     <View style={{ flexDirection: "row" }}>

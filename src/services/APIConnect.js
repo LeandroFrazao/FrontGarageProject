@@ -219,11 +219,12 @@ export const GetUserService = async (email) => {
 // Add service
 export const AddService = async ({
   vin: vin,
-  status: status,
+
   description: description,
   serviceType: serviceType,
   date_in: date_in,
 }) => {
+  let status = "Pending";
   return await APIConnect.post("/service", {
     vin,
     status,
@@ -234,15 +235,15 @@ export const AddService = async ({
 };
 // Update user service
 export const UpdateService = async ({
-  email: email,
-  vin: vin,
-  status: status,
-  description: description,
-  serviceType: serviceType,
-  date_in: date_in,
+  email,
+  vin,
+  description,
+  serviceType,
+  date_in,
+  serviceId,
 }) => {
-  console.log(email);
-  return await APIConnect.put("/users/" + email + "/service/" + vin, {
+  let status = "Pending";
+  return await APIConnect.put("/users/" + email + "/service/" + serviceId, {
     vin,
     status,
     description,
@@ -260,14 +261,14 @@ export const UpdateStatusService = async ({
   date_in: date_in,
 }) => {
   return await APIConnect.put(
-    "/users/" + email + "/service/" + vin + "/" + status,
+    "/users/" + email + "/service/" + serviceId + "/" + status,
     { vin, description, serviceType, date_in }
   );
 };
 
 // Delete service
-export const DeleteService = async ({ serviceId }) => {
-  console.log(slug);
+export const DeleteService = async ({ serviceId, email }) => {
+  console.log(serviceId);
   return await APIConnect.delete("/users/" + email + "/service/" + serviceId, {
     data: {
       serviceId: serviceId,
