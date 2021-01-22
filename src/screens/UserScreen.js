@@ -148,14 +148,14 @@ export default function UserScreen({ navigation }) {
           />
           <BTN
             style={styles.btn}
-            text="Service"
+            text="Bookings"
             onPress={() => {
               ServiceClick();
             }}
           />
           <BTN
             style={styles.btn}
-            text="History"
+            text="Invoices"
             onPress={() => {
               // onClick();
             }}

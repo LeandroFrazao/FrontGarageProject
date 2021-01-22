@@ -668,7 +668,7 @@ export default function PartsScreen({ navigation }) {
           ></BTN>
         </View>
       </View>
-      <View style={[styles.boxParts]}>
+      <View style={[styles.boxParts, { height: 400 }]}>
         <View style={[styles.headerParts]}>
           <Text style={styles.headerTitle}>Parts:</Text>
           <Text style={styles.count}>{partsCollection.length} items</Text>

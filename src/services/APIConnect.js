@@ -224,7 +224,7 @@ export const AddService = async ({
   serviceType: serviceType,
   date_in: date_in,
 }) => {
-  let status = "Pending";
+  let status = "Booked";
   return await APIConnect.post("/service", {
     vin,
     status,
@@ -242,7 +242,7 @@ export const UpdateService = async ({
   date_in,
   serviceId,
 }) => {
-  let status = "Pending";
+  let status = "Booked";
   return await APIConnect.put("/users/" + email + "/service/" + serviceId, {
     vin,
     status,
@@ -253,16 +253,18 @@ export const UpdateService = async ({
 };
 // Update user service (ADM)
 export const UpdateStatusService = async ({
-  email: email,
-  vin: vin,
-  status: status,
-  description: description,
-  serviceType: serviceType,
-  date_in: date_in,
+  email,
+  serviceId,
+  status,
+  description,
+  serviceType,
+  date_in,
+  staff,
+  vin,
 }) => {
   return await APIConnect.put(
     "/users/" + email + "/service/" + serviceId + "/" + status,
-    { vin, description, serviceType, date_in }
+    { vin, description, serviceType, date_in, staff }
   );
 };
 

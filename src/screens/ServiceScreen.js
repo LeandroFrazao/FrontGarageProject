@@ -5,9 +5,9 @@ import {
   StyleSheet,
   View,
   Text,
+  Alert,
   Platform,
   ScrollView,
-  SafeAreaView,
 } from "react-native";
 import Userinput from "../components/Userinput";
 import BTN from "../components/BTN";
@@ -56,7 +56,7 @@ export default function ServiceScreen({ navigation }) {
   });
   const [serviceCollection, setServiceCollection] = useState([]);
   const [oldServicesCollection, setOldServicesCollection] = useState([]);
-  const [partsName, setPartsName] = useState([]);
+  const [serviceType, setServiceType] = useState([]);
 
   const [helperData, setHelperData] = useState({
     vin: "",
@@ -72,13 +72,13 @@ export default function ServiceScreen({ navigation }) {
   });
   const [dropList, setDropList] = useState({
     isVisibleVin: false,
-    isVisiblePartName: false,
+    isVisibleServiceType: false,
   });
 
   const changeVisibility = (props) => {
     setDropList({
       isVisibleVin: false,
-      isVisiblePartName: false,
+      isVisibleServiceType: false,
       ...props,
     });
   };
@@ -125,7 +125,7 @@ export default function ServiceScreen({ navigation }) {
       if (error && error.response.data.error) {
         console.log(error.response.data.error);
         if (Platform.OS == "web") {
-          window.alert(error.response.data.error);
+          alert(error.response.data.error);
         } else {
           Alert.alert(
             error.response.data.error,
@@ -182,18 +182,19 @@ export default function ServiceScreen({ navigation }) {
             )
         );
 
-        let partNameMap = [];
+        //load information type of service and its cost from parts collection,
+        let serviceTypeMap = [];
         result.map((obj) => {
-          partNameMap.push({
+          serviceTypeMap.push({
             label: obj.partName,
             value: obj.partName,
             cost: obj.cost,
           });
         });
-        partNameMap.push({ label: "", value: null });
+        serviceTypeMap.push({ label: "", value: null });
 
-        setPartsName(
-          partNameMap.sort((a, b) =>
+        setServiceType(
+          serviceTypeMap.sort((a, b) =>
             a.value < b.value ? -1 : a.value > b.value ? 1 : 0
           )
         );
@@ -401,7 +402,7 @@ export default function ServiceScreen({ navigation }) {
         selected: true,
         disableTouchEvent: true,
         selectedColor: "#00adf5",
-        selectedTextColor: "C8D1E8",
+        selectedTextColor: "#C8D1E8",
       },
     };
     setMarkedDays({ ...markedDays, ...selectedday });
@@ -537,6 +538,7 @@ export default function ServiceScreen({ navigation }) {
         setServiceCollection(
           serviceCollection.filter((element) => element.serviceId !== serviceId)
         );
+        loadServiceCollection();
       })
       .catch(onFailure);
   };
@@ -551,6 +553,7 @@ export default function ServiceScreen({ navigation }) {
             (element) => element.serviceId !== serviceId
           )
         );
+        loadServiceCollection();
       })
       .catch(onFailure);
   };
@@ -582,17 +585,24 @@ export default function ServiceScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      <NavigationEvents
-        onWillFocus={() => {
-          //     loadBookings();
-        }}
-        onWillBlur={() => {}}
-      />
-      <View style={[{ paddingTop: 10, paddingHorizontal: 10 }]}>
-        <View>
-          <View style={[{ justifyContent: "center", alignItems: "center" }]}>
-            <View style={[{}]}>
+    <View style={[styles.container, { height: 1000 }]}>
+      <>
+        <ScrollView>
+          <NavigationEvents
+            onWillFocus={() => {
+              //     loadBookings();
+            }}
+            onWillBlur={() => {}}
+          />
+
+          <View
+            style={[
+              styles.bodyService,
+              { marginTop: 0 },
+              { ...(Platform.OS !== "android" && { zIndex: 100 }) },
+            ]}
+          >
+            <View style={[{ justifyContent: "center", alignItems: "center" }]}>
               <Calendar
                 // Specify style for calendar container element. Default = {}
                 style={{
@@ -685,294 +695,311 @@ export default function ServiceScreen({ navigation }) {
                 markingType="custom"
               />
             </View>
-          </View>
-          <View style={[{ flexDirection: "row", height: 60 }]}>
-            <Text
-              style={[
-                {
-                  height: 30,
-                  marginTop: 20,
+            <View style={[{ flexDirection: "row", height: 60 }]}>
+              <Text
+                style={[
+                  {
+                    height: 30,
+                    marginTop: 20,
 
-                  fontFamily: "Roboto",
-                  color: "rgba(31,31,78,1)",
-                  fontSize: 18,
+                    fontFamily: "Roboto",
+                    color: "rgba(31,31,78,1)",
+                    fontSize: 18,
+                  },
+                ]}
+              >
+                Pick a day:
+              </Text>
+              <Userinput
+                style={[{ paddingLeft: 5, paddingTop: 10, height: 60 }]}
+                styleInput={[
+                  {
+                    width: 150,
+                    backgroundColor: "white",
+                    borderColor: "gray",
+                    borderWidth: 2,
+                    height: 32,
+                    paddingTop: 10,
+                    fontSize: 15,
+                    textAlign: "center",
+                  },
+                ]}
+                styleHelper={{ height: 10, paddingTop: 0 }}
+                text=""
+                placeholder="Pick a Day Above"
+                value={serviceData.date_in}
+                keyboardtype={"default"}
+                helperText={helperData.date_in} //to show errors
+                editable={false}
+                focusable={false}
+              />
+            </View>
+
+            <View
+              style={[
+                styles.viewStyle,
+                {
+                  flexDirection: "row",
+
+                  ...(Platform.OS !== "android" && { zIndex: 99 }),
+                  height: 80,
                 },
               ]}
             >
-              Pick a day:
-            </Text>
-            <Userinput
-              style={[{ paddingLeft: 5, paddingTop: 10, height: 60 }]}
-              styleInput={[
-                {
-                  width: 150,
-                  backgroundColor: "white",
-                  borderColor: "gray",
-                  borderWidth: 2,
-                  height: 32,
-                  paddingTop: 10,
-                  fontSize: 15,
-                  textAlign: "center",
-                },
-              ]}
-              styleHelper={{ height: 10, paddingTop: 0 }}
-              text=""
-              placeholder="Pick a Day Above"
-              value={serviceData.date_in}
-              keyboardtype={"default"}
-              helperText={helperData.date_in} //to show errors
-              editable={false}
-              focusable={false}
-            />
-          </View>
-        </View>
-        <View
-          style={[
-            styles.viewStyle,
-            {
-              flexDirection: "row",
-
-              ...(Platform.OS !== "android" && { zIndex: 99 }),
-              height: 80,
-            },
-          ]}
-        >
-          <View
-            style={[
-              {
-                position: "relative",
-                height: 74,
-                width: 180,
-                //   paddingRight: 40,
-              },
-            ]}
-          >
-            <Text style={[styles.label]}>Vehicle: {serviceData.makeModel}</Text>
-            <DropDownPicker
-              items={vehicleVin}
-              placeholder="Select"
-              defaultValue={""}
-              controller={(instance) => (controllerDropVehicle = instance)}
-              onChangeList={(items, callback) => {
-                new Promise((resolve, reject) => resolve(setVehicleVin(items)))
-                  .then(() => callback())
-                  .catch(() => {});
-              }}
-              onChangeItem={(item) => {
-                setServiceData({
-                  ...serviceData,
-                  vin: item.value,
-                  makeModel: item.makeModel,
-                });
-              }}
-              isVisible={dropList.isVisibleVin}
-              onOpen={() => changeVisibility({ isVisibleVin: true })}
-              onClose={() =>
-                setDropList({
-                  isVisibleVin: false,
-                })
-              }
-              containerStyle={[
-                {
-                  height: 40,
-                  width: 130,
-                },
-              ]}
-              style={[styles.dropListStyle, { backgroundColor: "#fafafa" }]}
-              itemStyle={{
-                justifyContent: "flex-start",
-              }}
-              labelStyle={{
-                fontSize: 14,
-                textAlign: "left",
-                color: "blue",
-              }}
-              zIndex={7000}
-              dropDownStyle={[{ marginTop: 2, backgroundColor: "#fafafa" }]}
-            />
-            <Text style={[styles.helper]}>{helperData.vin}</Text>
-          </View>
-
-          <View style={[{ position: "relative", height: 74 }]}>
-            <Text style={[styles.label]}>Service Type: {serviceData.cost}</Text>
-            <DropDownPicker
-              items={partsName}
-              placeholder="Select"
-              defaultValue={""}
-              controller={(instance) => (controllerDropService = instance)}
-              onChangeList={(items, callback) => {
-                new Promise((resolve, reject) => resolve(setPartsName(items)))
-                  .then(() => callback())
-                  .catch(() => {});
-              }}
-              onChangeItem={(item) => {
-                setServiceData({
-                  ...serviceData,
-                  serviceType: item.value,
-                  cost: "€ " + item.cost,
-                });
-              }}
-              isVisible={dropList.isVisiblePartName}
-              onOpen={() => changeVisibility({ isVisiblePartName: true })}
-              onClose={() =>
-                setDropList({
-                  isVisiblePartName: false,
-                })
-              }
-              containerStyle={[
-                {
-                  height: 40,
-                  width: 130,
-                },
-              ]}
-              style={[styles.dropListStyle, { backgroundColor: "#fafafa" }]}
-              itemStyle={{
-                justifyContent: "flex-start",
-              }}
-              labelStyle={{
-                fontSize: 14,
-                textAlign: "left",
-                color: "blue",
-              }}
-              zIndex={6000}
-              dropDownStyle={[{ marginTop: 2, backgroundColor: "#fafafa" }]}
-            />
-            <Text style={[styles.helper]}>{helperData.serviceType}</Text>
-          </View>
-        </View>
-        <View
-          style={[
-            styles.viewStyle,
-            {
-              height: 70,
-            },
-          ]}
-        >
-          <Userinput
-            style={[{ paddingRight: 10 }]}
-            styleInput={[{ width: 320 }]}
-            styleHelper={[{ paddingTop: 0 }]}
-            maxLength={30}
-            text="Description"
-            placeholder="Describe the problem."
-            value={serviceData.description}
-            onChange={(e) => setServiceData({ ...serviceData, description: e })}
-            keyboardtype={"default"}
-            helperText={helperData.description} //to show errors/>
-          />
-        </View>
-        <View
-          style={[
-            styles.viewStyle,
-            {
-              flexDirection: "row",
-              height: 25,
-              paddingTop: 10,
-              justifyContent: "flex-end",
-            },
-          ]}
-        >
-          <BTN
-            style={styles.btn}
-            text={btnOption.add == true ? "Add" : "Update"}
-            onPress={() => {
-              btnOption.add
-                ? AddClick({
-                    serviceType: serviceData.serviceType,
-                    vin: serviceData.vin,
-                    date_in: serviceData.date_in,
-                    description: serviceData.description,
-                  })
-                : UpdateClick({
-                    serviceType: serviceData.serviceType,
-                    vin: serviceData.vin,
-                    date_in: serviceData.date_in,
-                    description: serviceData.description,
-                    serviceId: serviceData.serviceId,
-                  });
-            }}
-          ></BTN>
-          <BTN
-            style={styles.btn}
-            text="Clean"
-            onPress={() => {
-              CleanClick();
-            }}
-          ></BTN>
-        </View>
-
-        <View style={[styles.boxService]}>
-          <View style={[styles.headerService]}>
-            <Text style={[styles.headerTitle]}>Bookings:</Text>
-            <Text style={styles.count}>
-              {serviceCollection.length} bookings
-            </Text>
-          </View>
-          <>
-            <ScrollView>
-              <View>
-                {serviceCollection.count == 0 ? (
-                  <Text></Text>
-                ) : (
-                  serviceCollection &&
-                  serviceCollection.map((element, index) => {
-                    let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
-                    return (
-                      <View
-                        key={element._id}
-                        style={[styles.blockParts, { backgroundColor: color }]}
-                      >
-                        <SafeAreaView>
-                          <ScrollView>
-                            <View style={{ flexDirection: "row" }}>
-                              <View style={{ maxWidth: 320 }}>
-                                <Text style={styles.partsText}>
-                                  Booking: {element.date_in}
-                                  {"  "}Status: {element.status}
-                                </Text>
-                                <Text style={styles.partsText}>
-                                  {"  "}VIN: {element.vin}
-                                  {"  "}Service Type: {element.serviceType}
-                                </Text>
-                                <Text style={styles.partsText}>
-                                  {"  "}Description: {element.description}
-                                </Text>
-                              </View>
-                              <View>
-                                <BTN
-                                  style={styles.smallBtn}
-                                  styleCaption={styles.smallBtnText}
-                                  text="Edit"
-                                  onPress={() => {
-                                    EditClick(index);
-                                  }}
-                                ></BTN>
-
-                                <BTN
-                                  style={styles.smallBtn}
-                                  styleCaption={styles.smallBtnText}
-                                  text="Del"
-                                  onPress={() => {
-                                    DelClick({
-                                      serviceId: element.serviceId,
-                                      date_in: element.date_in,
-                                    });
-                                  }}
-                                />
-                              </View>
-                            </View>
-                          </ScrollView>
-                        </SafeAreaView>
-                      </View>
-                    );
-                  })
-                )}
+              <View
+                style={[
+                  {
+                    position: "relative",
+                    height: 74,
+                    width: 180,
+                    //   paddingRight: 40,
+                  },
+                ]}
+              >
+                <Text style={[styles.label]}>
+                  Vehicle: {serviceData.makeModel}
+                </Text>
+                <DropDownPicker
+                  items={vehicleVin}
+                  placeholder="Select"
+                  defaultValue={""}
+                  controller={(instance) => (controllerDropVehicle = instance)}
+                  onChangeList={(items, callback) => {
+                    new Promise((resolve, reject) =>
+                      resolve(setVehicleVin(items))
+                    )
+                      .then(() => callback())
+                      .catch(() => {});
+                  }}
+                  onChangeItem={(item) => {
+                    setServiceData({
+                      ...serviceData,
+                      vin: item.value,
+                      makeModel: item.makeModel,
+                    });
+                  }}
+                  isVisible={dropList.isVisibleVin}
+                  onOpen={() => changeVisibility({ isVisibleVin: true })}
+                  onClose={() =>
+                    setDropList({
+                      isVisibleVin: false,
+                    })
+                  }
+                  containerStyle={[
+                    {
+                      height: 40,
+                      width: 130,
+                    },
+                  ]}
+                  style={[styles.dropListStyle, { backgroundColor: "#fafafa" }]}
+                  itemStyle={{
+                    justifyContent: "flex-start",
+                  }}
+                  labelStyle={{
+                    fontSize: 14,
+                    textAlign: "left",
+                    color: "blue",
+                  }}
+                  zIndex={7000}
+                  dropDownStyle={[{ marginTop: 2, backgroundColor: "#fafafa" }]}
+                />
+                <Text style={[styles.helper]}>{helperData.vin}</Text>
               </View>
-            </ScrollView>
-          </>
+
+              <View style={[{ position: "relative", height: 74 }]}>
+                <Text style={[styles.label]}>
+                  Service Type: {serviceData.cost}
+                </Text>
+                <DropDownPicker
+                  items={serviceType}
+                  placeholder="Select"
+                  defaultValue={""}
+                  controller={(instance) => (controllerDropService = instance)}
+                  onChangeList={(items, callback) => {
+                    new Promise((resolve, reject) =>
+                      resolve(setServiceType(items))
+                    )
+                      .then(() => callback())
+                      .catch(() => {});
+                  }}
+                  onChangeItem={(item) => {
+                    setServiceData({
+                      ...serviceData,
+                      serviceType: item.value,
+                      cost: "€ " + item.cost,
+                    });
+                  }}
+                  isVisible={dropList.isVisibleServiceType}
+                  onOpen={() =>
+                    changeVisibility({ isVisibleServiceType: true })
+                  }
+                  onClose={() =>
+                    setDropList({
+                      isVisibleServiceType: false,
+                    })
+                  }
+                  containerStyle={[
+                    {
+                      height: 40,
+                      width: 130,
+                    },
+                  ]}
+                  style={[styles.dropListStyle, { backgroundColor: "#fafafa" }]}
+                  itemStyle={{
+                    justifyContent: "flex-start",
+                  }}
+                  labelStyle={{
+                    fontSize: 14,
+                    textAlign: "left",
+                    color: "blue",
+                  }}
+                  zIndex={6000}
+                  dropDownStyle={[{ marginTop: 2, backgroundColor: "#fafafa" }]}
+                />
+                <Text style={[styles.helper]}>{helperData.serviceType}</Text>
+              </View>
+            </View>
+            <View
+              style={[
+                styles.viewStyle,
+                {
+                  height: 70,
+                },
+              ]}
+            >
+              <Userinput
+                style={[{ paddingRight: 10 }]}
+                styleInput={[{ width: 320 }]}
+                styleHelper={[{ paddingTop: 0 }]}
+                maxLength={30}
+                text="Description"
+                placeholder="Describe the problem."
+                value={serviceData.description}
+                onChange={(e) =>
+                  setServiceData({ ...serviceData, description: e })
+                }
+                keyboardtype={"default"}
+                helperText={helperData.description} //to show errors/>
+              />
+            </View>
+            <View
+              style={[
+                styles.viewStyle,
+                {
+                  flexDirection: "row",
+                  height: 25,
+                  paddingTop: 10,
+                  justifyContent: "flex-end",
+                },
+              ]}
+            >
+              <BTN
+                style={styles.btn}
+                text={btnOption.add == true ? "Add" : "Update"}
+                onPress={() => {
+                  btnOption.add
+                    ? AddClick({
+                        serviceType: serviceData.serviceType,
+                        vin: serviceData.vin,
+                        date_in: serviceData.date_in,
+                        description: serviceData.description,
+                      })
+                    : UpdateClick({
+                        serviceType: serviceData.serviceType,
+                        vin: serviceData.vin,
+                        date_in: serviceData.date_in,
+                        description: serviceData.description,
+                        serviceId: serviceData.serviceId,
+                      });
+                }}
+              ></BTN>
+              <BTN
+                style={styles.btn}
+                text="Clean"
+                onPress={() => {
+                  CleanClick();
+                }}
+              ></BTN>
+            </View>
+          </View>
+          <View style={[styles.boxService, { height: 150 }]}>
+            <View style={[styles.headerService]}>
+              <Text style={[styles.headerTitle]}>Bookings:</Text>
+              <Text style={styles.count}>
+                {serviceCollection.length} bookings
+              </Text>
+            </View>
+            <>
+              <ScrollView nestedScrollEnabled>
+                <View>
+                  {serviceCollection.length == 0 ? (
+                    <Text></Text>
+                  ) : (
+                    serviceCollection &&
+                    serviceCollection.map((element, index) => {
+                      let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
+                      return (
+                        <View
+                          key={element._id}
+                          style={[
+                            styles.blockService,
+                            { backgroundColor: color },
+                          ]}
+                        >
+                          <View style={{ flexDirection: "row" }}>
+                            <View style={{ maxWidth: 320 }}>
+                              <Text style={styles.serviceText}>
+                                Booking: {element.date_in}
+                                {"  "}Status: {element.status}
+                              </Text>
+                              <Text style={styles.serviceText}>
+                                {"  "}VIN: {element.vin}
+                                {"  "}Service Type: {element.serviceType}
+                              </Text>
+                              <Text style={styles.serviceText}>
+                                {"  "}Description: {element.description}
+                              </Text>
+                            </View>
+                            <View>
+                              <BTN
+                                style={styles.smallBtn}
+                                styleCaption={styles.smallBtnText}
+                                text="Edit"
+                                onPress={() => {
+                                  EditClick(index);
+                                }}
+                              ></BTN>
+
+                              <BTN
+                                style={styles.smallBtn}
+                                styleCaption={styles.smallBtnText}
+                                text="Del"
+                                onPress={() => {
+                                  DelClick({
+                                    serviceId: element.serviceId,
+                                    date_in: element.date_in,
+                                  });
+                                }}
+                              />
+                            </View>
+                          </View>
+                        </View>
+                      );
+                    })
+                  )}
+                </View>
+              </ScrollView>
+            </>
+          </View>
           <View
             style={[
-              { marginTop: 10, borderTopWidth: 2, borderTopColor: "white" },
+              styles.boxService,
+              {
+                marginTop: 0,
+                borderTopWidth: 10,
+                borderTopColor: "white",
+                height: 150,
+              },
             ]}
           >
             <View style={[styles.headerService]}>
@@ -982,7 +1009,7 @@ export default function ServiceScreen({ navigation }) {
               </Text>
             </View>
             <>
-              <ScrollView>
+              <ScrollView nestedScrollEnabled>
                 <View>
                   {oldServicesCollection.length == 0 ? (
                     <Text> </Text>
@@ -995,42 +1022,38 @@ export default function ServiceScreen({ navigation }) {
                         <View
                           key={element._id}
                           style={[
-                            styles.blockParts,
+                            styles.blockService,
                             { backgroundColor: color },
                           ]}
                         >
-                          <SafeAreaView>
-                            <ScrollView>
-                              <View style={{ flexDirection: "row" }}>
-                                <View style={{ maxWidth: 320 }}>
-                                  <Text style={styles.partsText}>
-                                    Booking: {element.date_in}
-                                    {"  "}Status: {element.status}
-                                  </Text>
-                                  <Text style={styles.partsText}>
-                                    {"  "}VIN: {element.vin}
-                                    {"  "}Service Type: {element.serviceType}
-                                  </Text>
-                                  <Text style={styles.partsText}>
-                                    {"  "}Description: {element.description}
-                                  </Text>
-                                </View>
-                                <View>
-                                  <BTN
-                                    style={styles.smallBtn}
-                                    styleCaption={styles.smallBtnText}
-                                    text="Del"
-                                    onPress={() => {
-                                      deleteOldService({
-                                        serviceId: element.serviceId,
-                                        date_in: element.date_in,
-                                      });
-                                    }}
-                                  />
-                                </View>
-                              </View>
-                            </ScrollView>
-                          </SafeAreaView>
+                          <View style={{ flexDirection: "row" }}>
+                            <View style={{ maxWidth: 320 }}>
+                              <Text style={styles.serviceText}>
+                                Booking: {element.date_in}
+                                {"  "}Status: {element.status}
+                              </Text>
+                              <Text style={styles.serviceText}>
+                                {"  "}VIN: {element.vin}
+                                {"  "}Service Type: {element.serviceType}
+                              </Text>
+                              <Text style={styles.serviceText}>
+                                {"  "}Description: {element.description}
+                              </Text>
+                            </View>
+                            <View>
+                              <BTN
+                                style={styles.smallBtn}
+                                styleCaption={styles.smallBtnText}
+                                text="Del"
+                                onPress={() => {
+                                  deleteOldService({
+                                    serviceId: element.serviceId,
+                                    date_in: element.date_in,
+                                  });
+                                }}
+                              />
+                            </View>
+                          </View>
                         </View>
                       );
                     })
@@ -1039,8 +1062,8 @@ export default function ServiceScreen({ navigation }) {
               </ScrollView>
             </>
           </View>
-        </View>
-      </View>
+        </ScrollView>
+      </>
     </View>
   );
 }
@@ -1048,6 +1071,14 @@ export default function ServiceScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    // paddingTop: 10,
+    // paddingHorizontal: 10,
+  },
+  bodyService: {
+    //  alignItems: "center",
+    justifyContent: "center",
+    // paddingTop: 10,
+    paddingHorizontal: 20,
   },
   title: {
     fontFamily: "Roboto",
@@ -1079,13 +1110,13 @@ const styles = StyleSheet.create({
     marginRight: 35,
     marginTop: 5,
   },
-  partsText: {
+  serviceText: {
     fontFamily: "Roboto",
     color: "rgba(31,31,78,1)",
     fontSize: 14,
     marginTop: 5,
     textAlign: "left",
-    width: 280,
+    width: 300,
     marginHorizontal: 10,
   },
 
@@ -1110,9 +1141,16 @@ const styles = StyleSheet.create({
   boxService: {
     marginTop: 20,
     backgroundColor: "#E6E6E6",
-    width: "100%",
+    // width: "100%",
   },
+  blockService: {
+    fontFamily: "Roboto",
+    color: "rgba(31,31,78,1)",
+    fontSize: 12,
+    width: "100%",
 
+    marginTop: 10,
+  },
   headerService: {
     flexDirection: "row",
     backgroundColor: "#E6E6E6",
@@ -1142,3 +1180,5 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 });
+
+/*    */

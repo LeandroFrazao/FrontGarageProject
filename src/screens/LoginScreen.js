@@ -85,8 +85,8 @@ export default function LoginScreen({ navigation }) {
   function click({ email, key }) {
     // let email = "bolivar@lgmail.com";
     // let key = "123456";
-    //email = "leandrofrazao@hotmail.com"; /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    email = "bolivar@lgmail.com";
+    email = "leandrofrazao@hotmail.com"; /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //email = "bolivar@lgmail.com";
     //email = "hulk@marvel.com";
     key = "123456";
     let getValidation = {};
