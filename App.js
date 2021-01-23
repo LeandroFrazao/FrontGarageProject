@@ -11,6 +11,8 @@ import UpdateVehicleScreen from "./src/screens/UpdateVehicleScreen.js";
 import PartsScreen from "./src/screens/PartsScreen.js";
 import ServiceScreen from "./src/screens/ServiceScreen.js";
 import CheckServiceScreen from "./src/screens/CheckServiceScreen.js";
+import InvoiceScreen from "./src/screens/InvoiceScreen.js";
+
 const navigator = createStackNavigator(
   {
     Main: {
@@ -56,6 +58,10 @@ const navigator = createStackNavigator(
     CheckServiceScreen: {
       screen: CheckServiceScreen,
       navigationOptions: { title: "Check Service" },
+    },
+    InvoiceScreen: {
+      screen: InvoiceScreen,
+      navigationOptions: { title: "Invoice" },
     },
   },
 

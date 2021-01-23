@@ -8,6 +8,7 @@ import {
   Alert,
   Platform,
   ScrollView,
+  SectionList,
 } from "react-native";
 import Userinput from "../components/Userinput";
 import BTN from "../components/BTN";
@@ -17,9 +18,45 @@ import {
   DeleteService,
   GetService,
   UpdateStatusService,
+  GetParts,
 } from "../services/APIConnect";
 
-export default function CheckServiceScreen({ navigation }) {
+export default function InvoiceScreen({ navigation }) {
+  const [partsCollection, setPartsCollection] = useState([]);
+  const [partsData, setPartsData] = useState({
+    slug: "",
+    category: "",
+    make: "",
+    model: "",
+    cost: "",
+    partName: "",
+  });
+
+  const [partsCategory, setPartsCategory] = useState([]);
+  const [partsMake, setPartsMake] = useState([]);
+  const [partsModel, setPartsModel] = useState([]);
+  const [partsName, setPartsName] = useState([]);
+
+  const [btnOption, setBtnOption] = useState({
+    add: true,
+    update: false,
+  });
+  const [dropList, setDropList] = useState({
+    isVisibleCategory: false,
+    isVisibleMake: false,
+    isVisibleModel: false,
+    isVisiblePartName: false,
+  });
+
+  const changeVisibility = (props) => {
+    setDropList({
+      isVisibleModel: false,
+      isVisiblePartName: false,
+      isVisibleMake: false,
+      isVisibleCategory: false,
+      ...props,
+    });
+  };
   const [serviceData, setServiceData] = useState({
     email: "",
     serviceId: "",
@@ -49,24 +86,10 @@ export default function CheckServiceScreen({ navigation }) {
     { label: "", value: null },
   ]);
 
-  const [dropList, setDropList] = useState({
-    isVisibleVin: false,
-    isVisibleServiceType: false,
-    isVisibleStatus: false,
-  });
-
-  const changeVisibility = (props) => {
-    setDropList({
-      isVisibleVin: false,
-      isVisibleServiceType: false,
-      isVisibleStatus: false,
-      ...props,
-    });
-  };
-
   const [updateUser, setupdateUser] = useState(false);
 
   let controllerDropStatus;
+  //let controllerDropModel;
 
   const onFailure = async (error) => {
     console.log(error);
@@ -93,6 +116,195 @@ export default function CheckServiceScreen({ navigation }) {
         console.log(error.response.data.Security);
       }
     }
+  };
+
+  // function to load parts from databe, and then get a list of unique makes to an array.
+  const loadPartsCollection = () => {
+    // height: 25 all parts
+    GetParts()
+      .then((response) => {
+        console.log(response.data.parts);
+        // console.log(response);
+        let makes = [];
+        let models = [];
+        let categories = [];
+        let partNames = [];
+        // add to models array, each model of vehicles found in the parts collection from database
+        let parts = response.data.parts;
+        parts.map((element) => {
+          makes.push(element.make);
+          models.push(element.model);
+          categories.push(element.category);
+          partNames.push(element.partName);
+        });
+        // overwrite the array with unique elements
+        makes = [...new Set(makes)];
+        models = [...new Set(models)];
+        categories = [...new Set(categories)];
+        partNames = [...new Set(partNames)];
+
+        //  console.log(makes);
+        let makesMap = [];
+        let modelMap = [];
+        let categoryMap = [];
+        let partNameMap = [];
+        // create a map with label and value for each model to be used on drop list
+        makes.map((obj) => {
+          makesMap.push({
+            label: obj,
+            value: obj,
+          });
+        });
+
+        categories.map((obj) => {
+          categoryMap.push({
+            label: obj,
+            value: obj,
+          });
+        });
+
+        if (partsModel.length == 0) {
+          setPartsModel([{ label: "Model", value: null, hidden: true }]);
+          /*  models.map((obj) => {
+            modelMap.push({
+              label: obj,
+              value: obj,
+            });
+          });
+          setPartsModel(
+            modelMap.sort((a, b) =>
+              a.value < b.value ? -1 : a.value > b.value ? 1 : 0
+            )
+          ); */
+        } else loadDropListModels(partsData.make);
+
+        if (partsName.length == 0) {
+          setPartsName([{ label: "Part Name", value: null, hidden: true }]);
+
+          /*  partNames.map((obj) => {
+            partNameMap.push({
+              label: obj,
+              value: obj,
+            });
+          });
+          setPartsName(
+            partNameMap.sort((a, b) =>
+              a.value < b.value ? -1 : a.value > b.value ? 1 : 0
+            )
+          ); */
+        } else loadDropListPartNames(partsData.category);
+
+        setPartsCollection((partsCollection) => partsCollection.concat(parts));
+        setPartsMake(
+          makesMap.sort((a, b) =>
+            a.value < b.value ? -1 : a.value > b.value ? 1 : 0
+          )
+        );
+        setPartsCategory(
+          categoryMap.sort((a, b) =>
+            a.value < b.value ? -1 : a.value > b.value ? 1 : 0
+          )
+        );
+
+        //console.log(makesMap, modelMap, categoryMap, partNameMap);
+      })
+      .catch(onFailure);
+  };
+
+  //to load models in the droplist associated to a chosen make
+  const loadDropListModels = (value) => {
+    let result = partsCollection.filter(
+      (element, index) =>
+        index ===
+        partsCollection.findIndex(
+          (obj) => element.make == value && element.model == obj.model
+        )
+    );
+
+    let modelMap = [];
+    result.map((obj) => {
+      modelMap.push({
+        label: obj.model,
+        value: obj.model,
+      });
+    });
+    modelMap.push({ label: "Model", value: null, hidden: true });
+    setPartsModel(
+      modelMap.sort((a, b) =>
+        a.value < b.value ? -1 : a.value > b.value ? 1 : 0
+      )
+    );
+    //  controllerDropModel.selectItem(null);
+  };
+
+  //to load part names in the droplist associated to a chosen model
+  const loadListPartNamesByModel = (value) => {
+    let result = partsCollection.filter(
+      (element, index) =>
+        index ===
+        partsCollection.findIndex(
+          (obj) => element.model == value && element.partName == obj.partName
+        )
+    );
+    console.log(result);
+    let partNameMap = [];
+    result.map((obj) => {
+      console.log(obj);
+      partNameMap.push({
+        label: obj.partName,
+        value: obj.partName,
+      });
+    });
+    setPartsName(
+      partNameMap.sort((a, b) =>
+        a.value < b.value ? -1 : a.value > b.value ? 1 : 0
+      )
+    );
+  };
+
+  //to load parts names in the droplist associated to a chosen category
+  const loadDropListMake = (value) => {
+    //filter categories and remove duplicates.
+    /* let result = partsCollection.filter(
+      (element, index) =>
+        index ==
+        partsCollection.findIndex(
+          (obj) => element.category == value && element.make == obj.make
+        )
+    ); */
+    /*  result = partsCollection.filter(
+      (element, index) =>
+        element.category == value &&
+        index === partsCollection.findIndex((obj) => element.make == obj.make)
+    ); */
+    let result = partsCollection.reduce((filtered, current) => {
+      if (
+        !filtered.some(
+          (obj) => current.category === value && obj.make === current.make
+        )
+      ) {
+        filtered.push(current);
+      }
+      return filtered;
+    }, []);
+
+    //result = partsCollection.map((obj) => obj.category == value);
+    //[...new Map(partsCollection.map(obj => [obj.category, obj])).values()]
+    //result = [...new Set(result)];
+    console.log(result);
+    let makeMap = [];
+    result.map((obj) => {
+      makeMap.push({
+        label: obj.make,
+        value: obj.make,
+      });
+    });
+    console.log(makeMap);
+    setPartsMake(
+      makeMap.sort((a, b) =>
+        a.value < b.value ? -1 : a.value > b.value ? 1 : 0
+      )
+    );
   };
 
   const loadServiceCollection = () => {
@@ -141,7 +353,6 @@ export default function CheckServiceScreen({ navigation }) {
 
     setServiceCollection(services);
     let userService = navigation.state.params.CheckService;
-    console.log(userService);
     if (userService) {
       console.log(userService);
 
@@ -164,14 +375,15 @@ export default function CheckServiceScreen({ navigation }) {
 
   useEffect(() => {
     if (updateUser) {
-      loadServiceCollection();
+      //   loadServiceCollection();
       setupdateUser(false);
     }
   }, [updateUser]);
 
   //load data from veihicles, services, and get all sundays of 2 months.
   useEffect(() => {
-    loadUserService();
+    loadPartsCollection();
+    //  loadUserService();
   }, []);
 
   const validateData = ({ prop, item }) => {
@@ -404,265 +616,285 @@ export default function CheckServiceScreen({ navigation }) {
           <View
             style={[
               styles.bodyService,
-              { marginTop: 0 },
-              { ...(Platform.OS !== "android" && { zIndex: 120 }) },
+              { paddingTop: 20 },
+              { ...(Platform.OS !== "android" && { zIndex: 200 }) },
             ]}
           >
-            <View
-              style={[
-                { flexDirection: "row", height: 60 },
-                { ...(Platform.OS !== "android" && { zIndex: 110 }) },
-              ]}
-            >
-              <Text
-                style={[
-                  {
-                    height: 30,
-                    marginTop: 20,
-
-                    fontFamily: "Roboto",
-                    color: "rgba(31,31,78,1)",
-                    fontSize: 18,
-                  },
-                ]}
-              >
-                Date:
-              </Text>
-              <Userinput
-                style={[{ paddingLeft: 5, paddingTop: 10, height: 60 }]}
-                styleInput={[
-                  {
-                    width: 100,
-                    backgroundColor: "white",
-                    borderColor: "gray",
-                    borderWidth: 2,
-                    height: 32,
-                    paddingTop: 10,
-                    fontSize: 15,
-                    textAlign: "center",
-                  },
-                ]}
-                styleHelper={{ height: 10, paddingTop: 0 }}
-                text=""
-                value={serviceData.date_in}
-                keyboardtype={"default"}
-                helperText={helperData.serviceId} //to show errors
-                editable={false}
-                focusable={false}
-              />
-              <Text style={[styles.label, { marginLeft: 15, marginTop: 20 }]}>
-                Status:{" "}
-              </Text>
+            <>
               <View
                 style={[
                   {
-                    position: "relative",
-                    height: 74,
-                    width: 180,
-                    paddingTop: 10,
+                    flexDirection: "row",
+                    height: 200,
+                    width: 310,
+
+                    ...(Platform.OS !== "android" && { zIndex: 100 }),
                   },
                 ]}
               >
-                <DropDownPicker
-                  items={serviceStatus}
-                  placeholder="Select"
-                  defaultValue={serviceData.status}
-                  controller={(instance) => (controllerDropStatus = instance)}
-                  onChangeList={(items, callback) => {
-                    new Promise((resolve, reject) =>
-                      resolve(setServiceStatus(items))
-                    )
-                      .then(() => callback())
-                      .catch(() => {});
-                  }}
-                  onChangeItem={(item) => {
-                    setServiceData({
-                      ...serviceData,
-                      status: item.value,
-                    });
-                  }}
-                  isVisible={dropList.isVisibleStatus}
-                  onOpen={() => changeVisibility({ isVisibleStatus: true })}
-                  onClose={() =>
-                    setDropList({
-                      isVisibleStatus: false,
-                    })
-                  }
-                  containerStyle={[
+                <SectionList
+                  style={[{ backgroundColor: "#ffff" }]}
+                  sections={[
+                    { title: "D", data: ["Devin", "Dan", "Dominic"] },
                     {
-                      height: 30,
-                      width: 110,
+                      title: "J",
+                      data: [
+                        "Jackson",
+                        "James",
+                        "Jillian",
+                        "Jimmy",
+                        "Joel",
+                        "John",
+                        "Julie",
+                      ],
                     },
                   ]}
-                  style={[styles.dropListStyle, { backgroundColor: "#fafafa" }]}
-                  itemStyle={{
-                    justifyContent: "flex-start",
-                  }}
-                  labelStyle={{
-                    fontSize: 14,
-                    textAlign: "left",
-                    color: "blue",
-                  }}
-                  zIndex={9000}
-                  dropDownStyle={[{ marginTop: 2, backgroundColor: "#fafafa" }]}
+                  renderItem={({ item }) => <Text style={[]}>{item}</Text>}
+                  renderSectionHeader={({ section }) => (
+                    <Text style={[]}>{section.title}</Text>
+                  )}
+                  keyExtractor={(item, index) => index}
                 />
-                <Text style={[styles.helper]}>{helperData.status}</Text>
+                <View>
+                  <View
+                    style={[
+                      styles.viewStyle,
+                      {
+                        height: 36,
+                        ...(Platform.OS !== "android" && { zIndex: 180 }),
+                        paddingTop: 5,
+                      },
+                    ]}
+                  >
+                    <View style={[{ position: "relative", height: 36 }]}>
+                      <DropDownPicker
+                        items={partsCategory}
+                        placeholder="Categoy"
+                        onChangeItem={(item) => {
+                          setPartsData({ ...partsData, category: item.value });
+                          loadDropListMake(item.value);
+                        }}
+                        isVisible={dropList.isVisibleCategory}
+                        onOpen={() =>
+                          changeVisibility({ isVisibleCategory: true })
+                        }
+                        onClose={() =>
+                          setDropList({
+                            isVisibleCategory: false,
+                          })
+                        }
+                        containerStyle={[
+                          {
+                            height: 30,
+                            width: 120,
+                          },
+                        ]}
+                        style={[
+                          styles.dropListStyle,
+                          { backgroundColor: "#fafafa", paddingRight: 10 },
+                        ]}
+                        itemStyle={{
+                          justifyContent: "flex-start",
+                        }}
+                        labelStyle={{
+                          fontSize: 14,
+                          textAlign: "left",
+                          color: "blue",
+                        }}
+                        zIndex={7000}
+                        dropDownStyle={[
+                          { marginTop: 1, backgroundColor: "#fafafa" },
+                        ]}
+                      />
+                      <Text style={[styles.helper]}>{helperData.category}</Text>
+                    </View>
+                  </View>
+                  <View
+                    style={[
+                      styles.viewStyle,
+                      {
+                        height: 36,
+                        ...(Platform.OS !== "android" && { zIndex: 170 }),
+                        paddingTop: 5,
+                      },
+                    ]}
+                  >
+                    <View style={[{ position: "relative", height: 36 }]}>
+                      <DropDownPicker
+                        items={partsMake}
+                        placeholder="Make"
+                        onChangeItem={(item) => {
+                          setPartsData({ ...partsData, make: item.value });
+                          loadDropListModels(item.value);
+                        }}
+                        isVisible={dropList.isVisibleMake}
+                        onOpen={() => changeVisibility({ isVisibleMake: true })}
+                        onClose={() =>
+                          setDropList({
+                            isVisibleMake: false,
+                          })
+                        }
+                        containerStyle={[
+                          {
+                            height: 30,
+                            width: 120,
+                          },
+                        ]}
+                        style={[
+                          styles.dropListStyle,
+                          { backgroundColor: "#fafafa", paddingRight: 10 },
+                        ]}
+                        itemStyle={{
+                          justifyContent: "flex-start",
+                        }}
+                        labelStyle={{
+                          fontSize: 14,
+                          textAlign: "left",
+                          color: "blue",
+                        }}
+                        zIndex={6000}
+                        dropDownStyle={[
+                          { marginTop: 1, backgroundColor: "#fafafa" },
+                        ]}
+                      />
+                      <Text style={[styles.helper]}>{helperData.make}</Text>
+                    </View>
+                  </View>
+                  <View
+                    style={[
+                      styles.viewStyle,
+                      {
+                        height: 36,
+                        ...(Platform.OS !== "android" && { zIndex: 160 }),
+                        paddingTop: 5,
+                      },
+                    ]}
+                  >
+                    <View style={[{ position: "relative", height: 36 }]}>
+                      <DropDownPicker
+                        items={partsModel}
+                        placeholder="Model"
+                        defaultValue={""}
+                        /*   controller={(instance) =>
+                          (controllerDropModel = instance)
+                        }
+                        onChangeList={(items, callback) => {
+                          new Promise((resolve, reject) =>
+                            resolve(setPartsModel(items))
+                          )
+                            .then(() => callback())
+                            .catch(() => {});
+                        }} */
+                        onChangeItem={(item) => {
+                          setPartsData({ ...partsData, model: item.value });
+                          loadListPartNamesByModel(item.value);
+                        }}
+                        isVisible={dropList.isVisibleModel}
+                        onOpen={() =>
+                          changeVisibility({ isVisibleModel: true })
+                        }
+                        onClose={() =>
+                          setDropList({
+                            isVisibleModel: false,
+                          })
+                        }
+                        containerStyle={[
+                          {
+                            height: 30,
+                            width: 120,
+                          },
+                        ]}
+                        style={[
+                          styles.dropListStyle,
+                          { backgroundColor: "#fafafa", paddingRight: 0 },
+                        ]}
+                        itemStyle={{
+                          justifyContent: "flex-start",
+                        }}
+                        labelStyle={{
+                          fontSize: 14,
+                          textAlign: "left",
+                          color: "blue",
+                        }}
+                        zIndex={5000}
+                        dropDownStyle={[
+                          { marginTop: 1, backgroundColor: "#fafafa" },
+                        ]}
+                      />
+                      <Text style={[styles.helper]}>{helperData.model}</Text>
+                    </View>
+                  </View>
+                  <View
+                    style={[
+                      styles.viewStyle,
+                      {
+                        height: 36,
+                        ...(Platform.OS !== "android" && { zIndex: 150 }),
+                        paddingTop: 5,
+                      },
+                    ]}
+                  >
+                    <View style={[{ position: "relative", height: 36 }]}>
+                      <DropDownPicker
+                        items={partsName}
+                        placeholder="Part name"
+                        onChangeItem={(item) => {
+                          setPartsData({ ...partsData, partName: item.value });
+                        }}
+                        isVisible={dropList.isVisiblePartName}
+                        onOpen={() =>
+                          changeVisibility({ isVisiblePartName: true })
+                        }
+                        onClose={() =>
+                          setDropList({
+                            isVisiblePartName: false,
+                          })
+                        }
+                        containerStyle={[
+                          {
+                            height: 30,
+                            width: 120,
+                          },
+                        ]}
+                        style={[
+                          styles.dropListStyle,
+                          { backgroundColor: "#fafafa", paddingRight: 10 },
+                        ]}
+                        itemStyle={{
+                          justifyContent: "flex-start",
+                        }}
+                        labelStyle={{
+                          fontSize: 14,
+                          textAlign: "left",
+                          color: "blue",
+                        }}
+                        zIndex={4000}
+                        dropDownStyle={[
+                          { marginTop: 1, backgroundColor: "#fafafa" },
+                        ]}
+                      />
+                      <Text style={[styles.helper]}>{helperData.partName}</Text>
+                    </View>
+                  </View>
+                  <View>
+                    <Userinput
+                      style={[{ paddingRight: 46, height: 46 }]}
+                      styleInput={[styles.styleInput]}
+                      styleHelper={{ height: 0, paddingTop: 0 }}
+                      maxLength={16}
+                      text="Cost"
+                      placeholder="Select options above"
+                      value={partsData.cost}
+                      onChange={(e) =>
+                        setPartsData({ ...partsData, partName: e })
+                      }
+                      keyboardtype={"default"}
+                    ></Userinput>
+                  </View>
+                </View>
               </View>
-            </View>
+            </>
 
-            <View
-              style={[
-                styles.viewStyle,
-                {
-                  flexDirection: "row",
-
-                  ...(Platform.OS !== "android" && { zIndex: 90 }),
-                  height: 60,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  {
-                    height: 30,
-                    marginTop: 20,
-
-                    fontFamily: "Roboto",
-                    color: "rgba(31,31,78,1)",
-                    fontSize: 14,
-                  },
-                ]}
-              >
-                Staff:
-              </Text>
-              <Userinput
-                style={[{ paddingLeft: 5, paddingTop: 10, height: 60 }]}
-                styleInput={[
-                  {
-                    width: 200,
-                    backgroundColor: "white",
-                    height: 32,
-                    paddingTop: 10,
-                    fontSize: 14,
-                  },
-                ]}
-                placeholder="Type the Name of the Staff"
-                value={serviceData.staff ? serviceData.staff : ""}
-                onChange={(e) => setServiceData({ ...serviceData, staff: e })}
-                helperText={helperData.staff}
-                styleHelper={{ height: 10, paddingTop: 0 }}
-                text=""
-                keyboardtype={"default"}
-              />
-            </View>
-            <View
-              style={[
-                styles.viewStyle,
-                {
-                  flexDirection: "row",
-
-                  ...(Platform.OS !== "android" && { zIndex: 90 }),
-                  height: 80,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  {
-                    height: 30,
-                    marginTop: 20,
-
-                    fontFamily: "Roboto",
-                    color: "rgba(31,31,78,1)",
-                    fontSize: 14,
-                  },
-                ]}
-              >
-                Vehicle:
-              </Text>
-              <Userinput
-                style={[{ paddingLeft: 5, paddingTop: 10, height: 60 }]}
-                styleInput={[
-                  {
-                    width: 100,
-                    backgroundColor: "white",
-                    borderColor: "gray",
-                    borderWidth: 2,
-                    height: 32,
-                    paddingTop: 10,
-                    fontSize: 14,
-                    textAlign: "center",
-                  },
-                ]}
-                styleHelper={{ height: 10, paddingTop: 0 }}
-                text=""
-                value={serviceData.vin}
-                keyboardtype={"default"}
-                editable={false}
-                focusable={false}
-              />
-
-              <Text
-                style={[
-                  {
-                    paddingLeft: 5,
-                    height: 30,
-                    marginTop: 20,
-
-                    fontFamily: "Roboto",
-                    color: "rgba(31,31,78,1)",
-                    fontSize: 14,
-                  },
-                ]}
-              >
-                Service Type:
-              </Text>
-              <Userinput
-                style={[{ paddingLeft: 5, paddingTop: 10, height: 60 }]}
-                styleInput={[
-                  {
-                    width: 100,
-                    backgroundColor: "white",
-                    borderColor: "gray",
-                    borderWidth: 2,
-                    height: 32,
-                    paddingTop: 10,
-                    fontSize: 14,
-                    textAlign: "center",
-                  },
-                ]}
-                styleHelper={{ height: 0, paddingTop: 0 }}
-                text=""
-                value={serviceData.serviceType}
-                keyboardtype={"default"}
-                editable={false}
-                focusable={false}
-              />
-            </View>
-            <View
-              style={[
-                styles.viewStyle,
-                {
-                  height: 70,
-                },
-              ]}
-            >
-              <Userinput
-                style={[{ paddingRight: 10 }]}
-                styleInput={[{ width: 320 }]}
-                styleHelper={[{ height: 0, paddingTop: 0 }]}
-                maxLength={30}
-                text="Description"
-                placeholder="Describe the problem."
-                value={serviceData.description}
-                onChange={(e) =>
-                  setServiceData({ ...serviceData, description: e })
-                }
-                keyboardtype={"default"}
-                helperText={helperData.description} //to show errors/>
-                editable={false}
-              />
-            </View>
             <View
               style={[
                 styles.viewStyle,
@@ -842,7 +1074,7 @@ export default function CheckServiceScreen({ navigation }) {
                               />
                               {element.status == "Fixed" ? (
                                 <BTN
-                                  style={[styles.smallBtn, { width: 32 }]}
+                                  style={styles.smallBtn}
                                   styleCaption={styles.smallBtnText}
                                   text="Invoice"
                                   onPress={() => {

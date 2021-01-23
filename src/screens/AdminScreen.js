@@ -8,20 +8,13 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
-import Userinput from "../components/Userinput";
 import BTN from "../components/BTN";
-import DropDownPicker from "react-native-dropdown-picker";
 import { Calendar } from "react-native-calendars";
 import Icon from "react-native-vector-icons/Ionicons";
 import moment from "moment";
-import {
-  GetService,
-  GetUserService,
-  GetBookings,
-  DeleteService,
-} from "../services/APIConnect";
+import { GetService, GetBookings, DeleteService } from "../services/APIConnect";
 
-export default function UserScreen({ navigation }) {
+export default function AdminScreen({ navigation }) {
   const [userData, setUserData] = useState({
     name: "",
     email: "",
@@ -31,7 +24,6 @@ export default function UserScreen({ navigation }) {
     userType: "user",
     key: "",
   });
-  const [msgText, setMsgText] = useState("");
   const [dateSetting, setDateSetting] = useState({
     maxDate: new Date(
       new Date().getFullYear(),
@@ -45,18 +37,6 @@ export default function UserScreen({ navigation }) {
     ),
   });
 
-  const [vehicleVin, setVehicleVin] = useState([]);
-  const [serviceData, setServiceData] = useState({
-    email: "",
-    serviceId: "",
-    vin: "",
-    status: "",
-    description: "",
-    serviceType: "",
-    date_in: "",
-    makeModel: "",
-    cost: "",
-  });
   const [serviceCollection, setServiceCollection] = useState([]);
   const [oldServicesCollection, setOldServicesCollection] = useState([]);
 
@@ -226,12 +206,18 @@ export default function UserScreen({ navigation }) {
   };
 
   const CheckClick = (index) => {
-    console.log(serviceCollection[index]);
-    navigation.navigate("CheckServiceScreen", {
-      CheckService: serviceCollection[index],
-      ServiceCollection: serviceCollection,
-      index: index,
-    });
+    //if admin clicked in one of the services, it opens the booking page with its data on the fields, ]
+    //if clicked on bookings, it opens the booking page with blank fields.
+    if (index || index == 0) {
+      navigation.navigate("CheckServiceScreen", {
+        CheckService: serviceCollection[index],
+        ServiceCollection: serviceCollection,
+      });
+    } else {
+      navigation.navigate("CheckServiceScreen", {
+        ServiceCollection: serviceCollection,
+      });
+    }
   };
 
   const deleteService = ({ serviceId, email }) => {
@@ -304,6 +290,13 @@ export default function UserScreen({ navigation }) {
           ></BTN>
           <BTN
             style={styles.btn}
+            text="Bookings"
+            onPress={() => {
+              CheckClick();
+            }}
+          ></BTN>
+          <BTN
+            style={styles.btn}
             text="Parts"
             onPress={() => {
               PartsClick();
@@ -314,7 +307,7 @@ export default function UserScreen({ navigation }) {
             text="Invoices"
             onPress={
               () => {
-                onClick();
+                navigation.navigate("InvoiceScreen");
               }
               //navigation.navigate("Login");
             }
@@ -482,6 +475,74 @@ export default function UserScreen({ navigation }) {
           </ScrollView>
         </>
       </View>
+      <View style={[styles.boxService, { height: 200 }]}>
+        <View style={[styles.headerService]}>
+          <Text style={[styles.headerTitle]}>Fixed</Text>
+          <Text style={styles.count}>{serviceCollection.length} vehicles </Text>
+        </View>
+        <>
+          <ScrollView nestedScrollEnabled>
+            <View>
+              {serviceCollection.length == 0 ? (
+                <Text></Text>
+              ) : (
+                serviceCollection &&
+                serviceCollection.map((element, index) => {
+                  let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
+                  return (
+                    <View
+                      key={element._id}
+                      style={[styles.blockService, { backgroundColor: color }]}
+                    >
+                      <View style={{ flexDirection: "row" }}>
+                        <View style={{ maxWidth: 320 }}>
+                          <Text style={styles.serviceText}>
+                            Booking: {element.date_in}
+                            {"  "}Status: {element.status}
+                          </Text>
+                          <Text style={styles.serviceText}>
+                            {"  "}VIN: {element.vin}
+                            {"  "}Service Type: {element.serviceType}
+                          </Text>
+                          <Text style={styles.serviceText}>
+                            {"  "}Email: {element.email}
+                          </Text>
+                          <Text style={styles.serviceText}>
+                            {"  "}Description: {element.description}
+                          </Text>
+                        </View>
+                        <View>
+                          <BTN
+                            style={styles.smallBtn}
+                            styleCaption={styles.smallBtnText}
+                            text="Check"
+                            onPress={() => {
+                              CheckClick(index);
+                            }}
+                          ></BTN>
+
+                          <BTN
+                            style={styles.smallBtn}
+                            styleCaption={styles.smallBtnText}
+                            text="Del"
+                            onPress={() => {
+                              DelClick({
+                                serviceId: element.serviceId,
+                                date_in: element.date_in,
+                                email: element.email,
+                              });
+                            }}
+                          />
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </View>
+          </ScrollView>
+        </>
+      </View>
     </View>
   );
 }
@@ -518,7 +579,7 @@ const styles = StyleSheet.create({
   },
   btn: {
     height: 30,
-    width: 110,
+    width: 90,
     backgroundColor: "rgba(85,83,208,1)",
   },
   buttons: {
@@ -550,7 +611,7 @@ const styles = StyleSheet.create({
 
   smallBtn: {
     height: 18,
-    width: 28,
+    width: 30,
     marginVertical: 3,
     backgroundColor: "rgba(85,83,208,1)",
     paddingLeft: 0,

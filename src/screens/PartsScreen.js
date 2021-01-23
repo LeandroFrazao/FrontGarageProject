@@ -229,7 +229,6 @@ export default function PartsScreen({ navigation }) {
   // To load data on screen
   useEffect(() => {
     loadPartsCollection();
-    //loadVehicle();
   }, []);
 
   const validateData = ({ prop, item }) => {
@@ -451,7 +450,7 @@ export default function PartsScreen({ navigation }) {
               containerStyle={[
                 {
                   height: 20,
-                  width: 110,
+                  width: 120,
                 },
               ]}
               style={[
@@ -489,7 +488,7 @@ export default function PartsScreen({ navigation }) {
               containerStyle={[
                 {
                   height: 20,
-                  width: 110,
+                  width: 120,
                 },
               ]}
               style={[
@@ -527,7 +526,7 @@ export default function PartsScreen({ navigation }) {
               containerStyle={[
                 {
                   height: 20,
-                  width: 110,
+                  width: 120,
                 },
               ]}
               style={[
@@ -589,7 +588,7 @@ export default function PartsScreen({ navigation }) {
                 containerStyle={[
                   {
                     height: 20,
-                    width: 110,
+                    width: 140,
                   },
                 ]}
                 style={[

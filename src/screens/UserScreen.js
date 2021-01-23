@@ -3,8 +3,6 @@ import { useState, useEffect } from "react";
 import { StyleSheet, View, Text, Alert, Platform } from "react-native";
 import { NavigationEvents } from "react-navigation";
 
-import Header from "../components/HeaderScreen";
-
 import BTN from "../components/BTN";
 import { GetUserVehicles, DeleteVehicle } from "../services/APIConnect";
 
