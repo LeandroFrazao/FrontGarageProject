@@ -30,7 +30,7 @@ export default function CheckServiceScreen({ navigation }) {
     date_in: "",
     staff: "",
   });
-  const [serviceCollection, setServiceCollection] = useState([]);
+  const [serviceBooked, setServiceBooked] = useState([]);
   const [serviceInProgress, setServiceInProgress] = useState([]);
   const [oldServicesCollection, setOldServicesCollection] = useState([]);
 
@@ -104,19 +104,16 @@ export default function CheckServiceScreen({ navigation }) {
         let currentBookings = [];
         let inProgress = [];
         let oldBookings = [];
+        console.log(services);
         services.map((obj) => {
-          if (
-            obj.date_in >= currentDate ||
-            obj.status != "Collected" ||
-            obj.status != "Unrepairable"
-          ) {
-            if (obj.status == "Booked") {
-              currentBookings.push(obj);
-            } else inProgress.push(obj);
+          if (obj.date_in >= currentDate && obj.status == "Booked") {
+            currentBookings.push(obj);
+          } else if (obj.status == "In Service" || obj.status == "Fixed") {
+            inProgress.push(obj);
           } else oldBookings.push(obj);
         });
         // data of current bookings to be mapped to adm screen
-        setServiceCollection(
+        setServiceBooked(
           currentBookings.sort((a, b) =>
             a.date_in < b.date_in ? -1 : a.date_in > b.date_in ? 1 : 0
           )
@@ -136,15 +133,9 @@ export default function CheckServiceScreen({ navigation }) {
   const loadUserService = () => {
     console.log(serviceData);
 
-    let services = navigation.state.params.ServiceCollection;
-    console.log(services);
-
-    setServiceCollection(services);
     let userService = navigation.state.params.CheckService;
-    console.log(userService);
-    if (userService) {
-      console.log(userService);
 
+    if (userService) {
       setServiceData({
         vin: userService.vin,
         serviceType: userService.serviceType,
@@ -211,7 +202,7 @@ export default function CheckServiceScreen({ navigation }) {
     })
       .then((result) => {
         console.log(result);
-        setServiceCollection([]);
+        setServiceBooked([]);
         setOldServicesCollection([]);
         loadServiceCollection();
       })
@@ -248,7 +239,7 @@ export default function CheckServiceScreen({ navigation }) {
       getValidation.serviceId == ""
     ) {
       if (Platform.OS == "web") {
-        if (confirm("Update booking on " + date_in + " ?")) {
+        if (confirm("Update Status to " + status + " ?")) {
           updateService({
             serviceType,
             vin,
@@ -262,7 +253,7 @@ export default function CheckServiceScreen({ navigation }) {
         }
       } else {
         Alert.alert(
-          "Update booking on " + date_in,
+          "Update Status to " + status,
           "Confirm?",
           [
             {
@@ -309,22 +300,22 @@ export default function CheckServiceScreen({ navigation }) {
   };
 
   const EditClick = ({ index, status }) => {
-    console.log(serviceCollection[index]);
+    console.log(serviceBooked[index]);
 
     setHelperData({ ...helperData, error: "" });
 
-    //  controllerDropStatus.selectItem(serviceCollection[index].status);
+    //  controllerDropStatus.selectItem(serviceBooked[index].status);
     if (status == "Booked") {
       setServiceData({
-        vin: serviceCollection[index].vin,
-        serviceType: serviceCollection[index].serviceType,
-        date_in: serviceCollection[index].date_in,
+        vin: serviceBooked[index].vin,
+        serviceType: serviceBooked[index].serviceType,
+        date_in: serviceBooked[index].date_in,
 
-        description: serviceCollection[index].description,
+        description: serviceBooked[index].description,
 
-        serviceId: serviceCollection[index].serviceId,
-        email: serviceCollection[index].email,
-        status: serviceCollection[index].status,
+        serviceId: serviceBooked[index].serviceId,
+        email: serviceBooked[index].email,
+        status: serviceBooked[index].status,
       });
     } else {
       setServiceData({
@@ -348,8 +339,8 @@ export default function CheckServiceScreen({ navigation }) {
 
     DeleteService({ serviceId, email })
       .then((response) => {
-        setServiceCollection(
-          serviceCollection.filter((element) => element.serviceId !== serviceId)
+        setServiceBooked(
+          serviceBooked.filter((element) => element.serviceId !== serviceId)
         );
         loadServiceCollection();
       })
@@ -605,9 +596,11 @@ export default function CheckServiceScreen({ navigation }) {
               <Text
                 style={[
                   {
-                    paddingLeft: 5,
+                    textAlign: "right",
+                    width: 60,
+                    paddingLeft: 10,
                     height: 30,
-                    marginTop: 20,
+                    marginTop: 0,
 
                     fontFamily: "Roboto",
                     color: "rgba(31,31,78,1)",
@@ -696,18 +689,16 @@ export default function CheckServiceScreen({ navigation }) {
           <View style={[styles.boxService, { height: 200 }]}>
             <View style={[styles.headerService]}>
               <Text style={[styles.headerTitle]}>Bookings:</Text>
-              <Text style={styles.count}>
-                {serviceCollection.length} bookings
-              </Text>
+              <Text style={styles.count}>{serviceBooked.length} bookings</Text>
             </View>
             <>
               <ScrollView nestedScrollEnabled>
                 <View>
-                  {serviceCollection.length == 0 ? (
+                  {serviceBooked.length == 0 ? (
                     <Text></Text>
                   ) : (
-                    serviceCollection &&
-                    serviceCollection.map((element, index) => {
+                    serviceBooked &&
+                    serviceBooked.map((element, index) => {
                       let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
                       return (
                         <View
@@ -779,13 +770,13 @@ export default function CheckServiceScreen({ navigation }) {
             <View style={[styles.headerService]}>
               <Text style={[styles.headerTitle]}>In Progress:</Text>
               <Text style={styles.count}>
-                {serviceCollection.length} vehicles
+                {serviceInProgress.length} vehicles
               </Text>
             </View>
             <>
               <ScrollView nestedScrollEnabled>
                 <View>
-                  {serviceCollection.length == 0 ? (
+                  {serviceInProgress.length == 0 ? (
                     <Text></Text>
                   ) : (
                     serviceInProgress &&
@@ -842,7 +833,7 @@ export default function CheckServiceScreen({ navigation }) {
                               />
                               {element.status == "Fixed" ? (
                                 <BTN
-                                  style={[styles.smallBtn, { width: 32 }]}
+                                  style={[styles.smallBtn, { width: 35 }]}
                                   styleCaption={styles.smallBtnText}
                                   text="Invoice"
                                   onPress={() => {
@@ -870,7 +861,7 @@ export default function CheckServiceScreen({ navigation }) {
                 marginTop: 0,
                 borderTopWidth: 15,
                 borderTopColor: "#7D8F92",
-                height: 150,
+                height: 200,
               },
             ]}
           >
@@ -879,7 +870,7 @@ export default function CheckServiceScreen({ navigation }) {
                 Collected / Unrepairable / Old Booking
               </Text>
               <Text style={styles.count}>
-                {oldServicesCollection.length} bookings
+                {oldServicesCollection.length} vehicles
               </Text>
             </View>
             <>
@@ -905,6 +896,9 @@ export default function CheckServiceScreen({ navigation }) {
                               <Text style={styles.serviceText}>
                                 Booking: {element.date_in}
                                 {"  "}Status: {element.status}
+                              </Text>
+                              <Text style={styles.serviceText}>
+                                {"  "}Staff: {element.staff}
                               </Text>
                               <Text style={styles.serviceText}>
                                 {"  "}VIN: {element.vin}

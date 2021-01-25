@@ -13,6 +13,7 @@ import { Calendar } from "react-native-calendars";
 import Icon from "react-native-vector-icons/Ionicons";
 import moment from "moment";
 import { GetService, GetBookings, DeleteService } from "../services/APIConnect";
+import { NavigationEvents } from "react-navigation";
 
 export default function AdminScreen({ navigation }) {
   const [userData, setUserData] = useState({
@@ -37,7 +38,8 @@ export default function AdminScreen({ navigation }) {
     ),
   });
 
-  const [serviceCollection, setServiceCollection] = useState([]);
+  const [serviceInProgress, setServiceInProgress] = useState([]);
+  const [serviceBooked, setServiceBooked] = useState([]);
   const [oldServicesCollection, setOldServicesCollection] = useState([]);
 
   const [markedDays, setMarkedDays] = useState();
@@ -47,10 +49,10 @@ export default function AdminScreen({ navigation }) {
 
   const onFailure = (error) => {
     if (error) {
-      console.log(error.response);
-      if (error.response.data && error.response.data.error) {
-        alert(error && error.response.data.error);
-      } else alert(error && error.response.data.Security);
+      console.log(error);
+      if (error.response.response && error.response.data.error) {
+        console.log(error.response && error.response.data.error);
+      } else console.log(error.response && error.response.data.Security);
     }
   };
 
@@ -127,7 +129,9 @@ export default function AdminScreen({ navigation }) {
         let currentDate = new Date().toISOString().substr(0, 10);
         let selecteddays = {};
         let currentBookings = [];
+        let inProgress = [];
         let oldBookings = [];
+        console.log(services);
         services.map((obj) => {
           if (obj.date_in >= currentDate && obj.status == "Booked") {
             currentBookings.push(obj);
@@ -142,18 +146,22 @@ export default function AdminScreen({ navigation }) {
               dotColor: "green",
               selectedColor: "#FFFF84",
             };
-          } else oldBookings.push(obj);
+          } else if (obj.status == "Fixed" || obj.status == "In Service") {
+            inProgress.push(obj);
+          }
         });
+
         // days to be marked in the calendar
         setMarkedDays({ ...markedDays, ...selecteddays });
         // data of current bookings to be mapped to adm screen
-        setServiceCollection(
+        setServiceBooked(
           currentBookings.sort((a, b) =>
             a.date_in < b.date_in ? -1 : a.date_in > b.date_in ? 1 : 0
           )
         );
+
         // data of old bookings to be mapped to user screen
-        setOldServicesCollection(oldBookings);
+        setServiceInProgress(inProgress);
       })
       .catch(onFailure);
   };
@@ -168,16 +176,14 @@ export default function AdminScreen({ navigation }) {
   useEffect(() => {
     if (updateUser) {
       loadServiceCollection();
-      // setupdateUser(false);
+      setupdateUser(false);
     }
   }, [updateUser]);
 
   //load data from veihicles, services, and get all sundays of 2 months.
   useEffect(() => {
+    console.log("use 0");
     DisableSundays();
-
-    //loadUserVehicles();
-    //  loadServiceType();
   }, []);
 
   useEffect(() => {
@@ -205,17 +211,26 @@ export default function AdminScreen({ navigation }) {
     navigation.navigate("PartsScreen", {});
   };
 
-  const CheckClick = (index) => {
+  const CheckClickBooked = (index) => {
+    //if admin clicked in one of the services, it opens the booking page with its data on the fields, ]
+
+    navigation.navigate("CheckServiceScreen", {
+      CheckService: serviceBooked[index],
+    });
+  };
+  const CheckClickInProgress = (index) => {
+    //if admin clicked in one of the services, it opens the booking page with its data on the fields, ]
+
+    navigation.navigate("CheckServiceScreen", {
+      CheckService: serviceInProgress[index],
+    });
+  };
+  const invoiceClick = (index) => {
     //if admin clicked in one of the services, it opens the booking page with its data on the fields, ]
     //if clicked on bookings, it opens the booking page with blank fields.
-    if (index || index == 0) {
-      navigation.navigate("CheckServiceScreen", {
-        CheckService: serviceCollection[index],
-        ServiceCollection: serviceCollection,
-      });
-    } else {
-      navigation.navigate("CheckServiceScreen", {
-        ServiceCollection: serviceCollection,
+    if (index) {
+      navigation.navigate("InvoiceScreen", {
+        CheckService: serviceInProgress[index],
       });
     }
   };
@@ -225,8 +240,8 @@ export default function AdminScreen({ navigation }) {
 
     DeleteService({ serviceId, email })
       .then((response) => {
-        setServiceCollection(
-          serviceCollection.filter((element) => element.serviceId !== serviceId)
+        setServiceBooked(
+          serviceBooked.filter((element) => element.serviceId !== serviceId)
         );
         loadServiceCollection();
       })
@@ -247,10 +262,15 @@ export default function AdminScreen({ navigation }) {
       .catch(onFailure);
   };
 
-  const DelClick = ({ serviceId, date_in, email }) => {
+  const DelClick = ({ serviceId, date_in, email, type }) => {
     if (Platform.OS == "web") {
       if (confirm("Cancel booking on " + date_in + " ?")) {
-        deleteService({ serviceId, email });
+        if (type == "Booked") {
+          deleteService({ serviceId, email });
+        }
+        if (type == "InProgress") {
+          deleteServiceInProgress({ serviceId, email });
+        }
       }
     } else {
       Alert.alert(
@@ -264,7 +284,12 @@ export default function AdminScreen({ navigation }) {
           {
             text: "OK",
             onPress: () => {
-              deleteService({ serviceId, email });
+              if (type == "Booked") {
+                deleteService({ serviceId, email });
+              }
+              if (type == "InProgress") {
+                deleteServiceInProgress({ serviceId, email });
+              }
             },
           },
         ],
@@ -274,275 +299,293 @@ export default function AdminScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.body}>
-        <View style={styles.boxTitle}>
-          <Text style={styles.title}>Administrator </Text>
-          <Text style={styles.title}>User: {userData.name} </Text>
-        </View>
-        <View style={styles.buttons}>
-          <BTN
-            style={styles.btn}
-            text="Users"
-            onPress={() => {
-              onClick();
-            }}
-          ></BTN>
-          <BTN
-            style={styles.btn}
-            text="Bookings"
-            onPress={() => {
-              CheckClick();
-            }}
-          ></BTN>
-          <BTN
-            style={styles.btn}
-            text="Parts"
-            onPress={() => {
-              PartsClick();
-            }}
-          ></BTN>
-          <BTN
-            style={styles.btn}
-            text="Invoices"
-            onPress={
-              () => {
-                navigation.navigate("InvoiceScreen");
+    <View style={[styles.container, { height: 1000 }]}>
+      <NavigationEvents
+        onWillFocus={() => {
+          setupdateUser(true);
+        }}
+      />
+      <>
+        <ScrollView>
+          <View style={styles.body}>
+            <View style={styles.boxTitle}>
+              <Text style={styles.title}>Administrator </Text>
+              <Text style={styles.title}>User: {userData.name} </Text>
+            </View>
+            <View style={styles.buttons}>
+              <BTN
+                style={styles.btn}
+                text="Bookings"
+                onPress={() => {
+                  navigation.navigate("CheckServiceScreen", {
+                    ServiceBooked: serviceBooked,
+                    ServiceInProgress: serviceInProgress,
+                  });
+                }}
+              ></BTN>
+              <BTN
+                style={styles.btn}
+                text="Parts"
+                onPress={() => {
+                  PartsClick();
+                }}
+              ></BTN>
+            </View>
+          </View>
+          <View style={[{ justifyContent: "center", alignItems: "center" }]}>
+            <Calendar
+              style={{
+                borderWidth: 1,
+                borderColor: "gray",
+                height: 280,
+                width: 300,
+              }}
+              theme={{
+                textSectionTitleDisabledColor: "#d9e1e8",
+                backgroundColor: "#FAFFFF",
+                calendarBackground: "#FAFFFF",
+                textSectionTitleColor: "#b6c1cd",
+                selectedDayBackgroundColor: "#00adf5",
+                selectedDayTextColor: "blue",
+                todayTextColor: "#00adf5",
+                dayTextColor: "#2d4150",
+                monthTextColor: "#2d4150",
+                indicatorColor: "#2d4150",
+                textDayFontFamily: "monospace",
+                textMonthFontFamily: "monospace",
+                textDayHeaderFontFamily: "monospace",
+                textDayFontWeight: "300",
+                textMonthFontWeight: "bold",
+                textDayHeaderFontWeight: "300",
+                "stylesheet.calendar.main": {
+                  week: {
+                    marginTop: 2,
+                    marginBottom: 2,
+                    flexDirection: "row",
+                    justifyContent: "space-around",
+                  },
+                },
+                "stylesheet.day.basic": {
+                  container: {
+                    alignSelf: "stretch",
+                    alignItems: "center",
+                    //   backgroundColor: "red",
+                    height: 60,
+                  },
+                  base: {
+                    overflow: "hidden",
+                    height: 35,
+                    width: 35,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  },
+                  selected: {
+                    borderRadius: 0,
+                  },
+                },
+                "stylesheet.calendar.header": {
+                  week: {
+                    marginTop: 5,
+                    flexDirection: "row",
+                    justifyContent: "space-around",
+                  },
+                  dayHeader: {
+                    width: 30,
+                    textAlign: "center",
+                  },
+                },
+              }}
+              firstDay={1}
+              hideExtraDays={true}
+              disableMonthChange={false}
+              current={new Date()}
+              disabledDaysIndexes={[6]}
+              renderArrow={(direction) =>
+                direction === "left" ? (
+                  <Icon
+                    name="md-arrow-back-circle-outline"
+                    size={20}
+                    color="#4F8EF7"
+                  />
+                ) : (
+                  <Icon
+                    name="ios-arrow-forward-circle-outline"
+                    size={20}
+                    color="#4F8EF7"
+                  />
+                )
               }
-              //navigation.navigate("Login");
-            }
-          ></BTN>
-        </View>
-      </View>
-      <View style={[{ justifyContent: "center", alignItems: "center" }]}>
-        <Calendar
-          // Specify style for calendar container element. Default = {}
-          style={{
-            borderWidth: 1,
-            borderColor: "gray",
-            height: 280,
-            width: 300,
-          }}
-          theme={{
-            textSectionTitleDisabledColor: "#d9e1e8",
-            backgroundColor: "#FAFFFF",
-            calendarBackground: "#FAFFFF",
-            textSectionTitleColor: "#b6c1cd",
-            selectedDayBackgroundColor: "#00adf5",
-            selectedDayTextColor: "blue",
-            todayTextColor: "#00adf5",
-            dayTextColor: "#2d4150",
-            monthTextColor: "#2d4150",
-            indicatorColor: "#2d4150",
-            textDayFontFamily: "monospace",
-            textMonthFontFamily: "monospace",
-            textDayHeaderFontFamily: "monospace",
-            textDayFontWeight: "300",
-            textMonthFontWeight: "bold",
-            textDayHeaderFontWeight: "300",
-            "stylesheet.calendar.main": {
-              week: {
-                marginTop: 2,
-                marginBottom: 2,
-                flexDirection: "row",
-                justifyContent: "space-around",
-              },
-            },
-            "stylesheet.day.basic": {
-              container: {
-                alignSelf: "stretch",
-                alignItems: "center",
-                //   backgroundColor: "red",
-                height: 60,
-              },
-              base: {
-                overflow: "hidden",
-                height: 35,
-                width: 35,
-                alignItems: "center",
-                justifyContent: "center",
-              },
-              selected: {
-                borderRadius: 0,
-              },
-            },
-            "stylesheet.calendar.header": {
-              week: {
-                marginTop: 5,
-                flexDirection: "row",
-                justifyContent: "space-around",
-              },
-              dayHeader: {
-                width: 30,
-                textAlign: "center",
-              },
-            },
-          }}
-          firstDay={1}
-          hideExtraDays={true}
-          disableMonthChange={false}
-          current={new Date()}
-          disabledDaysIndexes={[6]}
-          renderArrow={(direction) =>
-            direction === "left" ? (
-              <Icon
-                name="md-arrow-back-circle-outline"
-                size={20}
-                color="#4F8EF7"
-              />
-            ) : (
-              <Icon
-                name="ios-arrow-forward-circle-outline"
-                size={20}
-                color="#4F8EF7"
-              />
-            )
-          }
-          markedDates={{ ...markedDays }}
-          minDate={dateSetting.minDate}
-          maxDate={dateSetting.maxDate}
-          onDayPress={(day) => {
-            //  ClickDay(day.dateString);
-          }}
-          markingType="custom"
-        />
-      </View>
-      <View style={[styles.boxService, { height: 200 }]}>
-        <View style={[styles.headerService]}>
-          <Text style={[styles.headerTitle]}>Bookings:</Text>
-          <Text style={styles.count}>{serviceCollection.length} bookings</Text>
-        </View>
-        <>
-          <ScrollView nestedScrollEnabled>
-            <View>
-              {serviceCollection.length == 0 ? (
-                <Text></Text>
-              ) : (
-                serviceCollection &&
-                serviceCollection.map((element, index) => {
-                  let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
-                  return (
-                    <View
-                      key={element._id}
-                      style={[styles.blockService, { backgroundColor: color }]}
-                    >
-                      <View style={{ flexDirection: "row" }}>
-                        <View style={{ maxWidth: 320 }}>
-                          <Text style={styles.serviceText}>
-                            Booking: {element.date_in}
-                            {"  "}Status: {element.status}
-                          </Text>
-                          <Text style={styles.serviceText}>
-                            {"  "}VIN: {element.vin}
-                            {"  "}Service Type: {element.serviceType}
-                          </Text>
-                          <Text style={styles.serviceText}>
-                            {"  "}Email: {element.email}
-                          </Text>
-                          <Text style={styles.serviceText}>
-                            {"  "}Description: {element.description}
-                          </Text>
-                        </View>
-                        <View>
-                          <BTN
-                            style={styles.smallBtn}
-                            styleCaption={styles.smallBtnText}
-                            text="Check"
-                            onPress={() => {
-                              CheckClick(index);
-                            }}
-                          ></BTN>
-
-                          <BTN
-                            style={styles.smallBtn}
-                            styleCaption={styles.smallBtnText}
-                            text="Del"
-                            onPress={() => {
-                              DelClick({
-                                serviceId: element.serviceId,
-                                date_in: element.date_in,
-                                email: element.email,
-                              });
-                            }}
-                          />
-                        </View>
-                      </View>
-                    </View>
-                  );
-                })
-              )}
+              markedDates={{ ...markedDays }}
+              minDate={dateSetting.minDate}
+              maxDate={dateSetting.maxDate}
+              onDayPress={(day) => {
+                //  ClickDay(day.dateString);
+              }}
+              markingType="custom"
+            />
+          </View>
+          <View style={[styles.boxService, { height: 200 }]}>
+            <View style={[styles.headerService]}>
+              <Text style={[styles.headerTitle]}>Bookings:</Text>
+              <Text style={styles.count}>{serviceBooked.length} bookings</Text>
             </View>
-          </ScrollView>
-        </>
-      </View>
-      <View style={[styles.boxService, { height: 200 }]}>
-        <View style={[styles.headerService]}>
-          <Text style={[styles.headerTitle]}>Fixed</Text>
-          <Text style={styles.count}>{serviceCollection.length} vehicles </Text>
-        </View>
-        <>
-          <ScrollView nestedScrollEnabled>
-            <View>
-              {serviceCollection.length == 0 ? (
-                <Text></Text>
-              ) : (
-                serviceCollection &&
-                serviceCollection.map((element, index) => {
-                  let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
-                  return (
-                    <View
-                      key={element._id}
-                      style={[styles.blockService, { backgroundColor: color }]}
-                    >
-                      <View style={{ flexDirection: "row" }}>
-                        <View style={{ maxWidth: 320 }}>
-                          <Text style={styles.serviceText}>
-                            Booking: {element.date_in}
-                            {"  "}Status: {element.status}
-                          </Text>
-                          <Text style={styles.serviceText}>
-                            {"  "}VIN: {element.vin}
-                            {"  "}Service Type: {element.serviceType}
-                          </Text>
-                          <Text style={styles.serviceText}>
-                            {"  "}Email: {element.email}
-                          </Text>
-                          <Text style={styles.serviceText}>
-                            {"  "}Description: {element.description}
-                          </Text>
-                        </View>
-                        <View>
-                          <BTN
-                            style={styles.smallBtn}
-                            styleCaption={styles.smallBtnText}
-                            text="Check"
-                            onPress={() => {
-                              CheckClick(index);
-                            }}
-                          ></BTN>
+            <>
+              <ScrollView nestedScrollEnabled>
+                <View>
+                  {serviceBooked.length == 0 ? (
+                    <Text></Text>
+                  ) : (
+                    serviceBooked &&
+                    serviceBooked.map((element, index) => {
+                      let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
+                      return (
+                        <View
+                          key={element._id}
+                          style={[
+                            styles.blockService,
+                            { backgroundColor: color },
+                          ]}
+                        >
+                          <View style={{ flexDirection: "row" }}>
+                            <View style={{ maxWidth: 320 }}>
+                              <Text style={styles.serviceText}>
+                                Booking: {element.date_in}
+                                {"  "}Status: {element.status}
+                              </Text>
+                              <Text style={styles.serviceText}>
+                                {"  "}VIN: {element.vin}
+                                {"  "}Service Type: {element.serviceType}
+                              </Text>
+                              <Text style={styles.serviceText}>
+                                {"  "}Email: {element.email}
+                              </Text>
+                              <Text style={styles.serviceText}>
+                                {"  "}Description: {element.description}
+                              </Text>
+                            </View>
+                            <View>
+                              <BTN
+                                style={styles.smallBtn}
+                                styleCaption={styles.smallBtnText}
+                                text="Check"
+                                onPress={() => {
+                                  CheckClickBooked(index);
+                                }}
+                              ></BTN>
 
-                          <BTN
-                            style={styles.smallBtn}
-                            styleCaption={styles.smallBtnText}
-                            text="Del"
-                            onPress={() => {
-                              DelClick({
-                                serviceId: element.serviceId,
-                                date_in: element.date_in,
-                                email: element.email,
-                              });
-                            }}
-                          />
+                              <BTN
+                                style={styles.smallBtn}
+                                styleCaption={styles.smallBtnText}
+                                text="Del"
+                                onPress={() => {
+                                  DelClick({
+                                    serviceId: element.serviceId,
+                                    date_in: element.date_in,
+                                    email: element.email,
+                                    type: "Booked",
+                                  });
+                                }}
+                              />
+                            </View>
+                          </View>
                         </View>
-                      </View>
-                    </View>
-                  );
-                })
-              )}
+                      );
+                    })
+                  )}
+                </View>
+              </ScrollView>
+            </>
+          </View>
+          <View style={[styles.boxService, { height: 200 }]}>
+            <View style={[styles.headerService]}>
+              <Text style={[styles.headerTitle]}>In Progress</Text>
+              <Text style={styles.count}>
+                {serviceInProgress.length} vehicles{" "}
+              </Text>
             </View>
-          </ScrollView>
-        </>
-      </View>
+            <>
+              <ScrollView nestedScrollEnabled>
+                <View>
+                  {serviceInProgress.length == 0 ? (
+                    <Text></Text>
+                  ) : (
+                    serviceInProgress &&
+                    serviceInProgress.map((element, index) => {
+                      let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
+                      return (
+                        <View
+                          key={element._id}
+                          style={[
+                            styles.blockService,
+                            { backgroundColor: color },
+                          ]}
+                        >
+                          <View style={{ flexDirection: "row" }}>
+                            <View style={{ maxWidth: 320 }}>
+                              <Text style={styles.serviceText}>
+                                Booking: {element.date_in}
+                                {"  "}Status: {element.status}
+                              </Text>
+                              <Text style={styles.serviceText}>
+                                {"  "}Staff: {element.staff}
+                              </Text>
+                              <Text style={styles.serviceText}>
+                                {"  "}VIN: {element.vin}
+                                {"  "}Service Type: {element.serviceType}
+                              </Text>
+                              <Text style={styles.serviceText}>
+                                {"  "}Email: {element.email}
+                              </Text>
+                              <Text style={styles.serviceText}>
+                                {"  "}Description: {element.description}
+                              </Text>
+                            </View>
+                            <View>
+                              <BTN
+                                style={styles.smallBtn}
+                                styleCaption={styles.smallBtnText}
+                                text="Check"
+                                onPress={() => {
+                                  CheckClickInProgress(index);
+                                }}
+                              ></BTN>
+
+                              <BTN
+                                style={styles.smallBtn}
+                                styleCaption={styles.smallBtnText}
+                                text="Del"
+                                onPress={() => {
+                                  DelClick({
+                                    serviceId: element.serviceId,
+                                    date_in: element.date_in,
+                                    email: element.email,
+
+                                    type: "InProgress",
+                                  });
+                                }}
+                              />
+                              {element.status == "Fixed" ? (
+                                <BTN
+                                  style={[styles.smallBtn, { width: 40 }]}
+                                  styleCaption={styles.smallBtnText}
+                                  text="Invoice"
+                                  onPress={() => {
+                                    invoiceClick(index);
+                                  }}
+                                />
+                              ) : null}
+                            </View>
+                          </View>
+                        </View>
+                      );
+                    })
+                  )}
+                </View>
+              </ScrollView>
+            </>
+          </View>
+        </ScrollView>
+      </>
     </View>
   );
 }
@@ -579,7 +622,7 @@ const styles = StyleSheet.create({
   },
   btn: {
     height: 30,
-    width: 90,
+    width: 150,
     backgroundColor: "rgba(85,83,208,1)",
   },
   buttons: {

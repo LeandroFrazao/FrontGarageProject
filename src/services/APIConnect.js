@@ -3,8 +3,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Create axios client, pre-configured with baseURL
 export const APIConnect = axios.create({
-  //baseURL: "https://tranquil-coast-47648.herokuapp.com",
-  baseURL: "http://localhost:3000",
+  baseURL: "https://tranquil-coast-47648.herokuapp.com",
+  //baseURL: "http://localhost:3000",
 
   timeout: 100000,
 });

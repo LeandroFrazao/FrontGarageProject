@@ -27,7 +27,7 @@ export default function AddVehicleScreen({ navigation }) {
     { label: "Hybrid", value: "hybrid" },
   ]);
   const [vehicleType, setVehicleType] = useState([
-    { label: "Motorcycle", value: "Mmotorcycle" },
+    { label: "Motorcycle", value: "motorcycle" },
     { label: "Car", value: "car" },
     { label: "Van", value: "van" },
     { label: "Bus", value: "bus" },

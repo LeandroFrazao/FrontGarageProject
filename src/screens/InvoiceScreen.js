@@ -13,13 +13,9 @@ import {
 import Userinput from "../components/Userinput";
 import BTN from "../components/BTN";
 import DropDownPicker from "react-native-dropdown-picker";
-
-import {
-  DeleteService,
-  GetService,
-  UpdateStatusService,
-  GetParts,
-} from "../services/APIConnect";
+import * as Print from "expo-print";
+import * as MediaLibrary from "expo-media-library";
+import { GetParts, GetUserVehicles } from "../services/APIConnect";
 
 export default function InvoiceScreen({ navigation }) {
   const [partsCollection, setPartsCollection] = useState([]);
@@ -31,16 +27,28 @@ export default function InvoiceScreen({ navigation }) {
     cost: "",
     partName: "",
   });
+  const [userData, setUserData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    userType: "user",
 
+    vehicle: [],
+  });
   const [partsCategory, setPartsCategory] = useState([]);
   const [partsMake, setPartsMake] = useState([]);
   const [partsModel, setPartsModel] = useState([]);
   const [partsName, setPartsName] = useState([]);
 
-  const [btnOption, setBtnOption] = useState({
-    add: true,
-    update: false,
+  const [listData, setListData] = useState([]);
+  const [listItems, setListItems] = useState([]);
+  const [costInvoice, setCostInvoice] = useState({
+    totalCost: 0,
+    serviceCost: 0,
   });
+
   const [dropList, setDropList] = useState({
     isVisibleCategory: false,
     isVisibleMake: false,
@@ -66,10 +74,8 @@ export default function InvoiceScreen({ navigation }) {
     serviceType: "",
     date_in: "",
     staff: "",
+    costService: "",
   });
-  const [serviceCollection, setServiceCollection] = useState([]);
-  const [serviceInProgress, setServiceInProgress] = useState([]);
-  const [oldServicesCollection, setOldServicesCollection] = useState([]);
 
   const [helperData, setHelperData] = useState({
     error: "",
@@ -77,21 +83,15 @@ export default function InvoiceScreen({ navigation }) {
     staff: "",
   });
 
-  const [serviceStatus, setServiceStatus] = useState([
-    { label: "Booked", value: "Booked" },
-    { label: "In Service", value: "In Service" },
-    { label: "Fixed", value: "Fixed" },
-    { label: "Collected", value: "Collected" },
-    { label: "Unrepairable", value: "Unrepairable" },
-    { label: "", value: null },
-  ]);
-
   const [updateUser, setupdateUser] = useState(false);
 
   let controllerDropStatus;
-  //let controllerDropModel;
+  let controllerDropModel;
+  let controllerDropMake;
+  let controllerDropCategory;
+  let controllerDropPartsName;
 
-  const onFailure = async (error) => {
+  const onFailure = (error) => {
     console.log(error);
 
     if (error && error.response) {
@@ -118,44 +118,19 @@ export default function InvoiceScreen({ navigation }) {
     }
   };
 
-  // function to load parts from databe, and then get a list of unique makes to an array.
+  // function to load parts from databe
   const loadPartsCollection = () => {
-    // height: 25 all parts
     GetParts()
       .then((response) => {
-        console.log(response.data.parts);
-        // console.log(response);
-        let makes = [];
-        let models = [];
         let categories = [];
-        let partNames = [];
-        // add to models array, each model of vehicles found in the parts collection from database
         let parts = response.data.parts;
         parts.map((element) => {
-          makes.push(element.make);
-          models.push(element.model);
           categories.push(element.category);
-          partNames.push(element.partName);
         });
         // overwrite the array with unique elements
-        makes = [...new Set(makes)];
-        models = [...new Set(models)];
         categories = [...new Set(categories)];
-        partNames = [...new Set(partNames)];
-
-        //  console.log(makes);
-        let makesMap = [];
-        let modelMap = [];
         let categoryMap = [];
-        let partNameMap = [];
-        // create a map with label and value for each model to be used on drop list
-        makes.map((obj) => {
-          makesMap.push({
-            label: obj,
-            value: obj,
-          });
-        });
-
+        // create a map with label and value for each category to be used on drop list
         categories.map((obj) => {
           categoryMap.push({
             label: obj,
@@ -163,50 +138,17 @@ export default function InvoiceScreen({ navigation }) {
           });
         });
 
-        if (partsModel.length == 0) {
-          setPartsModel([{ label: "Model", value: null, hidden: true }]);
-          /*  models.map((obj) => {
-            modelMap.push({
-              label: obj,
-              value: obj,
-            });
-          });
-          setPartsModel(
-            modelMap.sort((a, b) =>
-              a.value < b.value ? -1 : a.value > b.value ? 1 : 0
-            )
-          ); */
-        } else loadDropListModels(partsData.make);
-
-        if (partsName.length == 0) {
-          setPartsName([{ label: "Part Name", value: null, hidden: true }]);
-
-          /*  partNames.map((obj) => {
-            partNameMap.push({
-              label: obj,
-              value: obj,
-            });
-          });
-          setPartsName(
-            partNameMap.sort((a, b) =>
-              a.value < b.value ? -1 : a.value > b.value ? 1 : 0
-            )
-          ); */
-        } else loadDropListPartNames(partsData.category);
-
         setPartsCollection((partsCollection) => partsCollection.concat(parts));
-        setPartsMake(
-          makesMap.sort((a, b) =>
-            a.value < b.value ? -1 : a.value > b.value ? 1 : 0
-          )
-        );
+
+        setPartsModel([{ label: "Model", value: null, hidden: true }]);
+        setPartsName([{ label: "Part Name", value: null, hidden: true }]);
+        setPartsMake([{ label: "Make", value: null, hidden: true }]);
         setPartsCategory(
           categoryMap.sort((a, b) =>
             a.value < b.value ? -1 : a.value > b.value ? 1 : 0
           )
         );
-
-        //console.log(makesMap, modelMap, categoryMap, partNameMap);
+        setupdateUser(true);
       })
       .catch(onFailure);
   };
@@ -234,26 +176,32 @@ export default function InvoiceScreen({ navigation }) {
         a.value < b.value ? -1 : a.value > b.value ? 1 : 0
       )
     );
-    //  controllerDropModel.selectItem(null);
   };
 
   //to load part names in the droplist associated to a chosen model
   const loadListPartNamesByModel = (value) => {
-    let result = partsCollection.filter(
-      (element, index) =>
-        index ===
-        partsCollection.findIndex(
-          (obj) => element.model == value && element.partName == obj.partName
-        )
-    );
-    console.log(result);
+    let result = [];
+
+    partsCollection.map((element) => {
+      if (element.model == value && element.category == partsData.category) {
+        result.push(element.partName);
+      }
+    });
+
+    result = [...new Set(result)];
+
     let partNameMap = [];
     result.map((obj) => {
-      console.log(obj);
       partNameMap.push({
-        label: obj.partName,
-        value: obj.partName,
+        label: obj,
+        value: obj,
       });
+    });
+
+    partNameMap.push({
+      label: "Part Name",
+      value: null,
+      hidden: true,
     });
     setPartsName(
       partNameMap.sort((a, b) =>
@@ -265,96 +213,160 @@ export default function InvoiceScreen({ navigation }) {
   //to load parts names in the droplist associated to a chosen category
   const loadDropListMake = (value) => {
     //filter categories and remove duplicates.
-    /* let result = partsCollection.filter(
-      (element, index) =>
-        index ==
-        partsCollection.findIndex(
-          (obj) => element.category == value && element.make == obj.make
-        )
-    ); */
-    /*  result = partsCollection.filter(
-      (element, index) =>
-        element.category == value &&
-        index === partsCollection.findIndex((obj) => element.make == obj.make)
-    ); */
-    let result = partsCollection.reduce((filtered, current) => {
-      if (
-        !filtered.some(
-          (obj) => current.category === value && obj.make === current.make
-        )
-      ) {
-        filtered.push(current);
-      }
-      return filtered;
-    }, []);
 
-    //result = partsCollection.map((obj) => obj.category == value);
-    //[...new Map(partsCollection.map(obj => [obj.category, obj])).values()]
-    //result = [...new Set(result)];
-    console.log(result);
+    let result = [];
+    partsCollection.map((element) => {
+      if (element.category == value) {
+        result.push(element.make);
+      }
+    });
+
+    result = [...new Set(result)];
+
     let makeMap = [];
     result.map((obj) => {
       makeMap.push({
-        label: obj.make,
-        value: obj.make,
+        label: obj,
+        value: obj,
       });
     });
-    console.log(makeMap);
+
+    makeMap.push({
+      label: "Make",
+      value: null,
+      hidden: true,
+    });
     setPartsMake(
       makeMap.sort((a, b) =>
         a.value < b.value ? -1 : a.value > b.value ? 1 : 0
       )
     );
   };
+  //to get the cost of selected partname
+  const getCostPart = (value) => {
+    if (value) {
+      let result = [];
+      partsCollection.map((element) => {
+        if (
+          partsData.category == element.category &&
+          partsData.model == element.model &&
+          partsData.make == element.make &&
+          element.partName == value
+        ) {
+          result.push(element.cost);
+        }
+      });
 
-  const loadServiceCollection = () => {
-    GetService()
+      setPartsData({ ...partsData, cost: result[0], partName: value });
+    }
+  };
+
+  // load information of user, includind their vehicles
+  const loadUserVehicles = (userEmail) => {
+    GetUserVehicles(userEmail)
       .then((response) => {
-        //console.log(response.data.services);
-        let services = response.data.services;
-        let currentDate = new Date().toISOString().substr(0, 10);
-        let currentBookings = [];
-        let inProgress = [];
-        let oldBookings = [];
-        services.map((obj) => {
-          if (
-            obj.date_in >= currentDate ||
-            obj.status != "Collected" ||
-            obj.status != "Unrepairable"
-          ) {
-            if (obj.status == "Booked") {
-              currentBookings.push(obj);
-            } else inProgress.push(obj);
-          } else oldBookings.push(obj);
-        });
-        // data of current bookings to be mapped to adm screen
-        setServiceCollection(
-          currentBookings.sort((a, b) =>
-            a.date_in < b.date_in ? -1 : a.date_in > b.date_in ? 1 : 0
-          )
-        );
-        // data of vehicles in the garage to be mapped to adm screen
-        setServiceInProgress(
-          inProgress.sort((a, b) =>
-            a.date_in < b.date_in ? -1 : a.date_in > b.date_in ? 1 : 0
-          )
-        );
-        // data of old bookings to be mapped to user screen
-        setOldServicesCollection(oldBookings);
+        let user = [];
+        user = response.data.users[0];
+
+        setUserData(user);
       })
       .catch(onFailure);
   };
 
+  //add part to the invoice, and update the total due
+  const AddPart = ({ make, model, partName, partCost }) => {
+    if (partCost !== "") {
+      let total = parseInt(costInvoice.totalCost) + parseInt(partCost);
+      let loaddata = [...listData]; // copying the old array
+      let loadItems = [...listItems];
+
+      let list = {
+        title: "",
+        data: [make + " " + model + " - " + partName + ": €" + partCost],
+      };
+      let totalprice = {
+        title: "TOTAL DUE",
+        data: ["€" + total, "Payment due on collection."],
+      };
+
+      let item = [
+        "<li>" +
+          make +
+          " " +
+          model +
+          " - " +
+          partName +
+          ": €" +
+          partCost +
+          "</li>",
+      ];
+      loaddata.pop();
+      loaddata.push(list);
+      loaddata.push(totalprice);
+
+      loadItems.push(item); //store items to be used to generate pdf file
+      setCostInvoice({ ...costInvoice, totalCost: total });
+
+      console.log(loadItems);
+      setListItems(loadItems);
+      setListData(loaddata);
+    }
+  };
+
+  const loadListInformation = () => {
+    let serviceCost = [];
+    console.log(userData);
+
+    partsCollection.map((element) => {
+      if (
+        element.category == "Services" &&
+        element.partName == serviceData.serviceType
+      ) {
+        serviceCost.push(element.cost);
+      }
+    });
+    setServiceData({ ...serviceData, costService: serviceCost });
+    setCostInvoice({
+      ...costInvoice,
+      serviceCost: serviceCost,
+      totalCost: serviceCost,
+    });
+    if (userData.name !== "") {
+      let list = [
+        {
+          title: "User Information",
+          data: [
+            "Name: " + userData.name,
+            "Phone: " + userData.phone,
+            "Email: " + userData.email,
+            "Vehicle Identification Number: " + serviceData.vin,
+          ],
+        },
+        {
+          title: "Service Type",
+          data: [serviceData.serviceType + ": " + serviceCost],
+        },
+        {
+          title: "Parts",
+          data: [null],
+        },
+        {
+          title: "TOTAL DUE",
+          data: ["€" + serviceCost, "Payment due on collection."],
+        },
+      ];
+
+      setListData(list);
+    } else setupdateUser(true);
+  };
+
   const loadUserService = () => {
     console.log(serviceData);
-
-    let services = navigation.state.params.ServiceCollection;
-    console.log(services);
-
-    setServiceCollection(services);
     let userService = navigation.state.params.CheckService;
     if (userService) {
       console.log(userService);
+
+      loadUserVehicles(userService.email);
 
       setServiceData({
         vin: userService.vin,
@@ -366,231 +378,32 @@ export default function InvoiceScreen({ navigation }) {
         email: userService.email,
         staff: userService.staff,
       });
-    } else CleanClick();
 
-    setHelperData({ ...helperData, error: "" });
-
-    setupdateUser(true);
+      setHelperData({ ...helperData, error: "" });
+    } else setupdateUser(true);
   };
 
   useEffect(() => {
+    loadUserService();
     if (updateUser) {
-      //   loadServiceCollection();
+      loadListInformation();
       setupdateUser(false);
     }
   }, [updateUser]);
 
-  //load data from veihicles, services, and get all sundays of 2 months.
   useEffect(() => {
     loadPartsCollection();
-    //  loadUserService();
   }, []);
 
-  const validateData = ({ prop, item }) => {
-    let toReturn = {};
-
-    if (!prop && prop == "") {
-      if (item == "Status") toReturn = "Select " + item;
-      else if (item == "Staff") toReturn = "Type the name of the Staff";
-      else if (item == "ServiceId") toReturn = "Select one service.";
-      else toReturn = "";
-    } else if (item == "Status" && prop == "Booked") {
-      toReturn = "Change Status!";
-    } else toReturn = "";
-
-    return toReturn;
-  };
-
-  const updateService = ({
-    serviceType,
-    vin,
-    date_in,
-    description,
-    serviceId,
-    staff,
-    status,
-    email,
-  }) => {
-    UpdateStatusService({
-      serviceType,
-      vin,
-      date_in,
-      description,
-      email,
-      serviceId,
-      staff,
-      status,
-    })
-      .then((result) => {
-        console.log(result);
-        setServiceCollection([]);
-        setOldServicesCollection([]);
-        loadServiceCollection();
-      })
-      .catch(onFailure);
-  };
-
-  // update Booking
-  const UpdateClick = async ({
-    serviceType,
-    vin,
-    date_in,
-    description,
-    serviceId,
-    staff,
-    status,
-    email,
-  }) => {
-    let getValidation = {};
-    getValidation.staff = validateData({ prop: staff, item: "Staff" });
-    getValidation.status = validateData({ prop: status, item: "Status" });
-    getValidation.serviceId = validateData({
-      prop: serviceId,
-      item: "ServiceId",
-    });
-    setHelperData({
-      staff: getValidation.staff,
-      status: getValidation.status,
-      error: getValidation.serviceId,
-    });
-    console.log(getValidation);
-    if (
-      getValidation.status == "" &&
-      getValidation.staff == "" &&
-      getValidation.serviceId == ""
-    ) {
-      if (Platform.OS == "web") {
-        if (confirm("Update booking on " + date_in + " ?")) {
-          updateService({
-            serviceType,
-            vin,
-            date_in,
-            description,
-            serviceId,
-            status,
-            staff,
-            email,
-          });
-        }
-      } else {
-        Alert.alert(
-          "Update booking on " + date_in,
-          "Confirm?",
-          [
-            {
-              text: "Cancel",
-              style: "cancel",
-            },
-            {
-              text: "OK",
-              onPress: () => {
-                updateService({
-                  serviceType,
-                  vin,
-                  date_in,
-                  description,
-                  serviceId,
-                  staff,
-                  status,
-                  email,
-                });
-              },
-            },
-          ],
-          { cancelable: false }
-        );
-      }
-    }
-  };
-  //clean dropdown picker and userinputs
-  const CleanClick = () => {
-    setServiceData({
-      status: "",
-      staff: "",
-      vin: "",
-      description: "",
-      serviceType: "",
-      date_in: "",
-    });
-    setHelperData({
-      ...helperData,
-      status: "",
-      staff: "",
-      error: "",
-    });
-  };
-
-  const EditClick = ({ index, status }) => {
-    console.log(serviceCollection[index]);
-
-    setHelperData({ ...helperData, error: "" });
-
-    //  controllerDropStatus.selectItem(serviceCollection[index].status);
-    if (status == "Booked") {
-      setServiceData({
-        vin: serviceCollection[index].vin,
-        serviceType: serviceCollection[index].serviceType,
-        date_in: serviceCollection[index].date_in,
-
-        description: serviceCollection[index].description,
-
-        serviceId: serviceCollection[index].serviceId,
-        email: serviceCollection[index].email,
-        status: serviceCollection[index].status,
-      });
-    } else {
-      setServiceData({
-        vin: serviceInProgress[index].vin,
-        serviceType: serviceInProgress[index].serviceType,
-        date_in: serviceInProgress[index].date_in,
-
-        description: serviceInProgress[index].description,
-
-        serviceId: serviceInProgress[index].serviceId,
-        email: serviceInProgress[index].email,
-        status: serviceInProgress[index].status,
-        staff: serviceInProgress[index].staff,
-      });
-    }
-  };
-
-  const deleteService = ({ serviceId }) => {
-    console.log(serviceId + " deleted");
-    let email = navigation.state.params.userEmail;
-
-    DeleteService({ serviceId, email })
-      .then((response) => {
-        setServiceCollection(
-          serviceCollection.filter((element) => element.serviceId !== serviceId)
-        );
-        loadServiceCollection();
-      })
-      .catch(onFailure);
-  };
-  const deleteOldService = ({ serviceId }) => {
-    console.log(serviceId + " deleted");
-    let email = navigation.state.params.userEmail;
-
-    DeleteService({ serviceId, email })
-      .then((response) => {
-        setOldServicesCollection(
-          oldServicesCollection.filter(
-            (element) => element.serviceId !== serviceId
-          )
-        );
-        loadServiceCollection();
-      })
-      .catch(onFailure);
-  };
-
-  const DelClick = ({ serviceId, date_in }) => {
+  // Print Invoice
+  const PrintClick = async () => {
     if (Platform.OS == "web") {
-      if (confirm("Cancel booking on " + date_in + " ?")) {
-        deleteService({ serviceId: serviceId });
+      if (confirm("Print Invoice?")) {
+        ToPrint();
       }
     } else {
       Alert.alert(
-        "Cancel booking on " + date_in,
+        "Print Invoice to PDF",
         "Confirm?",
         [
           {
@@ -600,7 +413,7 @@ export default function InvoiceScreen({ navigation }) {
           {
             text: "OK",
             onPress: () => {
-              deleteService({ serviceId: serviceId });
+              ToPrint();
             },
           },
         ],
@@ -609,8 +422,83 @@ export default function InvoiceScreen({ navigation }) {
     }
   };
 
+  const htmlforMobile = `
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Pdf Content</title>
+      <style>
+          body { 
+              font-size: 16px;
+              color: rgb(28, 28, 28);
+          }            h1 {
+              text-align: center;
+          }
+      </style>
+  </head>
+  <body>
+      <h1>INVOICE</h1>
+      <h2> User Information </h2>   
+      <h4>Name: ${userData.name} </h4>
+      <h4>Phone: ${userData.email} </h4>
+      <h4>Identification Number: ${serviceData.vin} </h4>
+      <h3>Service Type</h2>
+      <h4>${serviceData.serviceType}:  ${costInvoice.serviceCost} </h4>
+      <h3>Parts</h2>
+      <ul>
+       ${listItems.length == 0 ? "" : listItems}
+       </ul>
+      <h2>TOTAL DUE</h2>
+      <h4>€  ${costInvoice.totalCost} 
+      <h3>Payment due on collection. </h3>
+      
+  </body>
+  </html>
+`;
+
+  const createPDF = async (html) => {
+    console.log(html);
+    try {
+      const { uri } = await Print.printToFileAsync({ html });
+      console.log(uri);
+      if (Platform.OS === "android") {
+        const permission = await MediaLibrary.requestPermissionsAsync();
+
+        if (permission.granted) {
+          await MediaLibrary.createAssetAsync(uri);
+          Alert.alert(
+            "Invoice saved",
+            "Invoice is located on " + uri,
+            [
+              {
+                text: "OK",
+              },
+            ],
+            { cancelable: false }
+          );
+        }
+      }
+      return uri;
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const ToPrint = () => {
+    if (Platform.OS != "web") {
+      createPDF(htmlforMobile);
+    } else {
+      const popwin = window.open("", "", "heigh=400", "width=400");
+      popwin.document.write(htmlforMobile);
+      popwin.document.close();
+      popwin.print();
+    }
+  };
+
   return (
-    <View style={[styles.container, { height: 1000 }]}>
+    <View style={[styles.container, { height: 500 }]}>
       <>
         <ScrollView>
           <View
@@ -625,8 +513,8 @@ export default function InvoiceScreen({ navigation }) {
                 style={[
                   {
                     flexDirection: "row",
-                    height: 200,
-                    width: 310,
+                    height: 310,
+                    width: 320,
 
                     ...(Platform.OS !== "android" && { zIndex: 100 }),
                   },
@@ -634,27 +522,53 @@ export default function InvoiceScreen({ navigation }) {
               >
                 <SectionList
                   style={[{ backgroundColor: "#ffff" }]}
-                  sections={[
-                    { title: "D", data: ["Devin", "Dan", "Dominic"] },
-                    {
-                      title: "J",
-                      data: [
-                        "Jackson",
-                        "James",
-                        "Jillian",
-                        "Jimmy",
-                        "Joel",
-                        "John",
-                        "Julie",
-                      ],
-                    },
-                  ]}
-                  renderItem={({ item }) => <Text style={[]}>{item}</Text>}
+                  sections={listData}
+                  renderItem={({ item }) => (
+                    <Text
+                      style={[
+                        {
+                          padding: 5,
+                          fontSize: 14,
+                          //  height: ,
+                        },
+                      ]}
+                    >
+                      {item}
+                    </Text>
+                  )}
                   renderSectionHeader={({ section }) => (
-                    <Text style={[]}>{section.title}</Text>
+                    <Text
+                      style={[
+                        {
+                          paddingTop: 2,
+                          paddingLeft: 10,
+                          paddingRight: 10,
+                          paddingBottom: 2,
+                          fontSize: 16,
+                          fontWeight: "bold",
+                          backgroundColor: "rgba(247,247,247,1.0)",
+                        },
+                      ]}
+                    >
+                      {section.title}
+                    </Text>
                   )}
                   keyExtractor={(item, index) => index}
                 />
+              </View>
+              <View
+                style={[
+                  {
+                    alignContent: "flex-start",
+                    alignItems: "flex-start",
+                    flexDirection: "row",
+                    height: 225,
+                    width: 200,
+
+                    ...(Platform.OS !== "android" && { zIndex: 100 }),
+                  },
+                ]}
+              >
                 <View>
                   <View
                     style={[
@@ -670,14 +584,27 @@ export default function InvoiceScreen({ navigation }) {
                       <DropDownPicker
                         items={partsCategory}
                         placeholder="Categoy"
+                        controller={(instance) =>
+                          (controllerDropCategory = instance)
+                        }
+                        onChangeList={(items, callback) => {
+                          new Promise((resolve, reject) =>
+                            resolve(setPartsCategory(items))
+                          )
+                            .then(() => callback())
+                            .catch(() => {});
+                        }}
                         onChangeItem={(item) => {
                           setPartsData({ ...partsData, category: item.value });
                           loadDropListMake(item.value);
                         }}
                         isVisible={dropList.isVisibleCategory}
-                        onOpen={() =>
-                          changeVisibility({ isVisibleCategory: true })
-                        }
+                        onOpen={() => {
+                          changeVisibility({ isVisibleCategory: true });
+                          setPartsData({ ...partsData, cost: "" });
+                          controllerDropModel.selectItem(null);
+                          controllerDropMake.selectItem(null);
+                        }}
                         onClose={() =>
                           setDropList({
                             isVisibleCategory: false,
@@ -686,7 +613,7 @@ export default function InvoiceScreen({ navigation }) {
                         containerStyle={[
                           {
                             height: 30,
-                            width: 120,
+                            width: 150,
                           },
                         ]}
                         style={[
@@ -723,12 +650,25 @@ export default function InvoiceScreen({ navigation }) {
                       <DropDownPicker
                         items={partsMake}
                         placeholder="Make"
+                        controller={(instance) =>
+                          (controllerDropMake = instance)
+                        }
+                        onChangeList={(items, callback) => {
+                          new Promise((resolve, reject) =>
+                            resolve(setPartsMake(items))
+                          )
+                            .then(() => callback())
+                            .catch(() => {});
+                        }}
                         onChangeItem={(item) => {
                           setPartsData({ ...partsData, make: item.value });
                           loadDropListModels(item.value);
                         }}
                         isVisible={dropList.isVisibleMake}
-                        onOpen={() => changeVisibility({ isVisibleMake: true })}
+                        onOpen={() => {
+                          changeVisibility({ isVisibleMake: true });
+                          setPartsData({ ...partsData, cost: "" });
+                        }}
                         onClose={() =>
                           setDropList({
                             isVisibleMake: false,
@@ -737,7 +677,7 @@ export default function InvoiceScreen({ navigation }) {
                         containerStyle={[
                           {
                             height: 30,
-                            width: 120,
+                            width: 150,
                           },
                         ]}
                         style={[
@@ -775,7 +715,7 @@ export default function InvoiceScreen({ navigation }) {
                         items={partsModel}
                         placeholder="Model"
                         defaultValue={""}
-                        /*   controller={(instance) =>
+                        controller={(instance) =>
                           (controllerDropModel = instance)
                         }
                         onChangeList={(items, callback) => {
@@ -784,15 +724,16 @@ export default function InvoiceScreen({ navigation }) {
                           )
                             .then(() => callback())
                             .catch(() => {});
-                        }} */
+                        }}
                         onChangeItem={(item) => {
                           setPartsData({ ...partsData, model: item.value });
                           loadListPartNamesByModel(item.value);
                         }}
                         isVisible={dropList.isVisibleModel}
-                        onOpen={() =>
-                          changeVisibility({ isVisibleModel: true })
-                        }
+                        onOpen={() => {
+                          changeVisibility({ isVisibleModel: true });
+                          setPartsData({ ...partsData, cost: "" });
+                        }}
                         onClose={() =>
                           setDropList({
                             isVisibleModel: false,
@@ -801,7 +742,7 @@ export default function InvoiceScreen({ navigation }) {
                         containerStyle={[
                           {
                             height: 30,
-                            width: 120,
+                            width: 150,
                           },
                         ]}
                         style={[
@@ -838,8 +779,19 @@ export default function InvoiceScreen({ navigation }) {
                       <DropDownPicker
                         items={partsName}
                         placeholder="Part name"
+                        controller={(instance) =>
+                          (controllerDropPartsName = instance)
+                        }
+                        onChangeList={(items, callback) => {
+                          new Promise((resolve, reject) =>
+                            resolve(setPartsName(items))
+                          )
+                            .then(() => callback())
+                            .catch(() => {});
+                        }}
                         onChangeItem={(item) => {
                           setPartsData({ ...partsData, partName: item.value });
+                          getCostPart(item.value);
                         }}
                         isVisible={dropList.isVisiblePartName}
                         onOpen={() =>
@@ -853,7 +805,7 @@ export default function InvoiceScreen({ navigation }) {
                         containerStyle={[
                           {
                             height: 30,
-                            width: 120,
+                            width: 150,
                           },
                         ]}
                         style={[
@@ -876,299 +828,76 @@ export default function InvoiceScreen({ navigation }) {
                       <Text style={[styles.helper]}>{helperData.partName}</Text>
                     </View>
                   </View>
-                  <View>
-                    <Userinput
-                      style={[{ paddingRight: 46, height: 46 }]}
-                      styleInput={[styles.styleInput]}
-                      styleHelper={{ height: 0, paddingTop: 0 }}
-                      maxLength={16}
-                      text="Cost"
-                      placeholder="Select options above"
-                      value={partsData.cost}
-                      onChange={(e) =>
-                        setPartsData({ ...partsData, partName: e })
-                      }
-                      keyboardtype={"default"}
-                    ></Userinput>
+
+                  <View
+                    style={[
+                      styles.viewStyle,
+                      {
+                        flexDirection: "row",
+                        height: 80,
+                        paddingTop: 10,
+                        justifyContent: "space-between",
+                        paddingLeft: 0,
+                        width: 150,
+                      },
+                    ]}
+                  >
+                    <View>
+                      <Userinput
+                        style={[{ paddingLeft: 0, height: 50, width: 150 }]}
+                        styleInput={[
+                          styles.styleInput,
+                          {
+                            borderColor: "#ffff",
+                            borderWidth: 2,
+                            width: 150,
+                            textAlign: "center",
+                          },
+                        ]}
+                        styleHelper={{ height: 0, paddingTop: 0 }}
+                        maxLength={16}
+                        text="Cost €"
+                        placeholder="Select above"
+                        value={partsData.cost}
+                        onChange={(e) =>
+                          setPartsData({ ...partsData, cost: e })
+                        }
+                        editable={false}
+                        focusable={false}
+                      ></Userinput>
+
+                      <BTN
+                        style={styles.btn}
+                        text={"Add part"}
+                        onPress={() => {
+                          AddPart({
+                            make: partsData.make,
+                            model: partsData.model,
+                            partName: partsData.partName,
+                            partCost: partsData.cost,
+                          });
+                        }}
+                      ></BTN>
+                    </View>
                   </View>
                 </View>
+
+                <View style={{ paddingLeft: 60, paddingTop: 50 }}>
+                  <BTN
+                    style={[
+                      styles.btn,
+                      listData.length > 0
+                        ? { backgroundColor: "#3F51B5" }
+                        : { backgroundColor: "gray" },
+                    ]}
+                    text={"Print"}
+                    disabled={listData.length > 0 ? false : true}
+                    onPress={() => {
+                      PrintClick();
+                    }}
+                  ></BTN>
+                </View>
               </View>
-            </>
-
-            <View
-              style={[
-                styles.viewStyle,
-                {
-                  flexDirection: "row",
-                  height: 25,
-                  paddingTop: 10,
-                  justifyContent: "space-between",
-                },
-              ]}
-            >
-              <Text style={[styles.helper]}>{helperData.error}</Text>
-              <BTN
-                style={styles.btn}
-                text={"Update"}
-                onPress={() => {
-                  UpdateClick({
-                    serviceType: serviceData.serviceType,
-                    vin: serviceData.vin,
-                    date_in: serviceData.date_in,
-                    description: serviceData.description,
-                    serviceId: serviceData.serviceId,
-                    staff: serviceData.staff,
-                    status: serviceData.status,
-                    email: serviceData.email,
-                  });
-                }}
-              ></BTN>
-            </View>
-          </View>
-          <View style={[styles.boxService, { height: 200 }]}>
-            <View style={[styles.headerService]}>
-              <Text style={[styles.headerTitle]}>Bookings:</Text>
-              <Text style={styles.count}>
-                {serviceCollection.length} bookings
-              </Text>
-            </View>
-            <>
-              <ScrollView nestedScrollEnabled>
-                <View>
-                  {serviceCollection.length == 0 ? (
-                    <Text></Text>
-                  ) : (
-                    serviceCollection &&
-                    serviceCollection.map((element, index) => {
-                      let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
-                      return (
-                        <View
-                          key={element._id}
-                          style={[
-                            styles.blockService,
-                            { backgroundColor: color },
-                          ]}
-                        >
-                          <View style={{ flexDirection: "row" }}>
-                            <View style={{ maxWidth: 320 }}>
-                              <Text style={styles.serviceText}>
-                                Booking: {element.date_in}
-                                {"  "}Status: {element.status}
-                              </Text>
-                              <Text style={styles.serviceText}>
-                                {"  "}VIN: {element.vin}
-                                {"  "}Service Type: {element.serviceType}
-                              </Text>
-                              <Text style={styles.serviceText}>
-                                {"  "}Email: {element.email}
-                              </Text>
-                              <Text style={styles.serviceText}>
-                                {"  "}Description: {element.description}
-                              </Text>
-                            </View>
-                            <View>
-                              <BTN
-                                style={styles.smallBtn}
-                                styleCaption={styles.smallBtnText}
-                                text="Edit"
-                                onPress={() => {
-                                  EditClick({ index, status: element.status });
-                                }}
-                              ></BTN>
-
-                              <BTN
-                                style={styles.smallBtn}
-                                styleCaption={styles.smallBtnText}
-                                text="Del"
-                                onPress={() => {
-                                  DelClick({
-                                    serviceId: element.serviceId,
-                                    date_in: element.date_in,
-                                  });
-                                }}
-                              />
-                            </View>
-                          </View>
-                        </View>
-                      );
-                    })
-                  )}
-                </View>
-              </ScrollView>
-            </>
-          </View>
-          <View
-            style={[
-              styles.boxService,
-              { height: 200 },
-              {
-                marginTop: 0,
-                borderTopWidth: 15,
-                borderTopColor: "#FFFF00",
-              },
-            ]}
-          >
-            <View style={[styles.headerService]}>
-              <Text style={[styles.headerTitle]}>In Progress:</Text>
-              <Text style={styles.count}>
-                {serviceCollection.length} vehicles
-              </Text>
-            </View>
-            <>
-              <ScrollView nestedScrollEnabled>
-                <View>
-                  {serviceCollection.length == 0 ? (
-                    <Text></Text>
-                  ) : (
-                    serviceInProgress &&
-                    serviceInProgress.map((element, index) => {
-                      let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
-                      return (
-                        <View
-                          key={element._id}
-                          style={[
-                            styles.blockService,
-                            { backgroundColor: color },
-                          ]}
-                        >
-                          <View style={{ flexDirection: "row" }}>
-                            <View style={{ maxWidth: 320 }}>
-                              <Text style={styles.serviceText}>
-                                Booking: {element.date_in}
-                                {"  "}Status: {element.status}
-                              </Text>
-                              <Text style={styles.serviceText}>
-                                {"  "}Staff: {element.staff}
-                              </Text>
-                              <Text style={styles.serviceText}>
-                                {"  "}VIN: {element.vin}
-                                {"  "}Service Type: {element.serviceType}
-                              </Text>
-                              <Text style={styles.serviceText}>
-                                {"  "}Email: {element.email}
-                              </Text>
-                              <Text style={styles.serviceText}>
-                                {"  "}Description: {element.description}
-                              </Text>
-                            </View>
-                            <View>
-                              <BTN
-                                style={styles.smallBtn}
-                                styleCaption={styles.smallBtnText}
-                                text="Edit"
-                                onPress={() => {
-                                  EditClick({ index, status: element.status });
-                                }}
-                              ></BTN>
-
-                              <BTN
-                                style={styles.smallBtn}
-                                styleCaption={styles.smallBtnText}
-                                text="Del"
-                                onPress={() => {
-                                  DelClick({
-                                    serviceId: element.serviceId,
-                                    date_in: element.date_in,
-                                  });
-                                }}
-                              />
-                              {element.status == "Fixed" ? (
-                                <BTN
-                                  style={styles.smallBtn}
-                                  styleCaption={styles.smallBtnText}
-                                  text="Invoice"
-                                  onPress={() => {
-                                    /*  DelClick({
-                                   serviceId: element.serviceId,
-                                   date_in: element.date_in,
-                                 }); */
-                                  }}
-                                />
-                              ) : null}
-                            </View>
-                          </View>
-                        </View>
-                      );
-                    })
-                  )}
-                </View>
-              </ScrollView>
-            </>
-          </View>
-          <View
-            style={[
-              styles.boxService,
-              {
-                marginTop: 0,
-                borderTopWidth: 15,
-                borderTopColor: "#7D8F92",
-                height: 150,
-              },
-            ]}
-          >
-            <View style={[styles.headerService]}>
-              <Text style={[styles.headerTitle]}>
-                Collected / Unrepairable / Old Booking
-              </Text>
-              <Text style={styles.count}>
-                {oldServicesCollection.length} bookings
-              </Text>
-            </View>
-            <>
-              <ScrollView nestedScrollEnabled>
-                <View>
-                  {oldServicesCollection.length == 0 ? (
-                    <Text> </Text>
-                  ) : (
-                    oldServicesCollection &&
-                    oldServicesCollection.map((element, index) => {
-                      let color = index % 2 == 0 ? "#E8F7FF" : "#E6E6E6";
-
-                      return (
-                        <View
-                          key={element._id}
-                          style={[
-                            styles.blockService,
-                            { backgroundColor: color },
-                          ]}
-                        >
-                          <View style={{ flexDirection: "row" }}>
-                            <View style={{ maxWidth: 320 }}>
-                              <Text style={styles.serviceText}>
-                                Booking: {element.date_in}
-                                {"  "}Status: {element.status}
-                              </Text>
-                              <Text style={styles.serviceText}>
-                                {"  "}VIN: {element.vin}
-                                {"  "}Service Type: {element.serviceType}
-                              </Text>
-                              <Text style={styles.serviceText}>
-                                {"  "}Email: {element.email}
-                              </Text>
-                              <Text style={styles.serviceText}>
-                                {"  "}Description: {element.description}
-                              </Text>
-                            </View>
-                            <View>
-                              <BTN
-                                style={styles.smallBtn}
-                                styleCaption={styles.smallBtnText}
-                                text="Del"
-                                onPress={() => {
-                                  deleteOldService({
-                                    serviceId: element.serviceId,
-                                    date_in: element.date_in,
-                                  });
-                                }}
-                              />
-                            </View>
-                          </View>
-                        </View>
-                      );
-                    })
-                  )}
-                </View>
-              </ScrollView>
             </>
           </View>
         </ScrollView>
@@ -1180,13 +909,9 @@ export default function InvoiceScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // paddingTop: 10,
-    // paddingHorizontal: 10,
   },
   bodyService: {
-    //  alignItems: "center",
     justifyContent: "center",
-    // paddingTop: 10,
     paddingHorizontal: 20,
   },
   title: {
@@ -1202,7 +927,7 @@ const styles = StyleSheet.create({
 
   btn: {
     height: 25,
-    width: 80,
+    width: 100,
 
     paddingRight: 10,
   },

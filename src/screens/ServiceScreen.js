@@ -65,6 +65,7 @@ export default function ServiceScreen({ navigation }) {
     serviceType: "",
     date_in: "",
     status: "",
+    error: "",
   });
   const [btnOption, setBtnOption] = useState({
     add: true,
@@ -90,6 +91,8 @@ export default function ServiceScreen({ navigation }) {
   });
   const [updateAll, setupdateAll] = useState(false);
   const [updateUser, setupdateUser] = useState(false);
+  const [resetCalendar, setResetCalendar] = useState(false);
+  const [unableSundays, setUnableSundays] = useState(false);
 
   let controllerDropService;
   let controllerDropVehicle;
@@ -246,7 +249,8 @@ export default function ServiceScreen({ navigation }) {
   };
 
   const loadServiceCollection = () => {
-    GetUserService()
+    let email = navigation.state.params.userEmail;
+    GetUserService(email)
       .then((response) => {
         // console.log(response.data.users[0].services);
         let services = response.data.users[0].services;
@@ -277,10 +281,27 @@ export default function ServiceScreen({ navigation }) {
         // data of old bookings to be mapped to user screen
         setOldServicesCollection(oldBookings);
       })
-      .catch(onFailure);
+      .catch((response) => {
+        console.log(response);
+      });
   };
 
   //after sundays are marked in the calendar, it loads data of bookings to be marked in the calendar.
+
+  useEffect(() => {
+    if (unableSundays) {
+      DisableSundays();
+      setUnableSundays(false);
+    }
+  }, [unableSundays]);
+
+  useEffect(() => {
+    if (resetCalendar) {
+      setMarkedDays([]);
+      setUnableSundays(true);
+      setResetCalendar(false);
+    }
+  }, [resetCalendar]);
   useEffect(() => {
     if (updateAll) {
       loadAllBookings();
@@ -313,21 +334,26 @@ export default function ServiceScreen({ navigation }) {
       else toReturn = "";
     } else if (item == "Vehicle") {
       //check if there is any VIN already booked.
-      serviceCollection.some((obj) => {
-        {
-          if (obj.vin === prop) {
-            toReturn = "Already booked on " + obj.date_in + ".";
-          } else toReturn = "";
-        }
-      });
+      if (serviceCollection.length > 0) {
+        serviceCollection.some((obj) => {
+          {
+            console.log(obj);
+            if (obj.vin === prop && obj.status == "Booked") {
+              return (toReturn = "Already booked on " + obj.date_in + ".");
+            } else if (obj.vin === prop && obj.status == "In Service") {
+              return (toReturn = "Vehicle is being fixed.");
+            } else if (obj.vin === prop && obj.status == "Fixed") {
+              return (toReturn = "Vehicle is fixed at the garage.");
+            } else toReturn = "";
+          }
+        });
+      } else toReturn = "";
     } else toReturn = "";
     return toReturn;
   };
 
   // add new part
   function AddClick({ vin, serviceType, date_in, description }) {
-    //  console.log(vin, serviceType, date_in, description);
-
     let getValidation = {};
     getValidation.description = validateData({
       prop: description,
@@ -341,6 +367,7 @@ export default function ServiceScreen({ navigation }) {
     getValidation.date_in = validateData({ prop: date_in, item: "Date" });
 
     setHelperData({
+      ...helperData,
       description: getValidation.description,
       vin: getValidation.vin,
       date_in: getValidation.date_in,
@@ -353,6 +380,7 @@ export default function ServiceScreen({ navigation }) {
       getValidation.date_in == "" &&
       getValidation.serviceType == ""
     ) {
+      console.log(vin, serviceType, date_in, description);
       if (Platform.OS == "web") {
         if (confirm("Confirm Booking at " + date_in + " ?")) {
           addbooking({ vin, date_in, serviceType, description });
@@ -459,7 +487,17 @@ export default function ServiceScreen({ navigation }) {
         setBtnOption({ add: true, update: false });
         setServiceCollection([]);
         setOldServicesCollection([]);
-        loadServiceCollection();
+        // reset calendar, reload bookings and disable sundays
+
+        setResetCalendar(true);
+        setSelectedDay({
+          day: "",
+          options: "",
+        });
+        //DisableSundays();
+        //  setupdateUser(true);
+        //   loadServiceCollection();
+
         CleanClick();
       })
       .catch(onFailure);
@@ -588,13 +626,6 @@ export default function ServiceScreen({ navigation }) {
     <View style={[styles.container, { height: 1000 }]}>
       <>
         <ScrollView>
-          <NavigationEvents
-            onWillFocus={() => {
-              //     loadBookings();
-            }}
-            onWillBlur={() => {}}
-          />
-
           <View
             style={[
               styles.bodyService,
@@ -604,7 +635,6 @@ export default function ServiceScreen({ navigation }) {
           >
             <View style={[{ justifyContent: "center", alignItems: "center" }]}>
               <Calendar
-                // Specify style for calendar container element. Default = {}
                 style={{
                   borderWidth: 1,
                   borderColor: "gray",
@@ -960,28 +990,30 @@ export default function ServiceScreen({ navigation }) {
                                 {"  "}Description: {element.description}
                               </Text>
                             </View>
-                            <View>
-                              <BTN
-                                style={styles.smallBtn}
-                                styleCaption={styles.smallBtnText}
-                                text="Edit"
-                                onPress={() => {
-                                  EditClick(index);
-                                }}
-                              ></BTN>
+                            {element.status == "Booked" ? (
+                              <View>
+                                <BTN
+                                  style={styles.smallBtn}
+                                  styleCaption={styles.smallBtnText}
+                                  text="Edit"
+                                  onPress={() => {
+                                    EditClick(index);
+                                  }}
+                                ></BTN>
 
-                              <BTN
-                                style={styles.smallBtn}
-                                styleCaption={styles.smallBtnText}
-                                text="Del"
-                                onPress={() => {
-                                  DelClick({
-                                    serviceId: element.serviceId,
-                                    date_in: element.date_in,
-                                  });
-                                }}
-                              />
-                            </View>
+                                <BTN
+                                  style={styles.smallBtn}
+                                  styleCaption={styles.smallBtnText}
+                                  text="Del"
+                                  onPress={() => {
+                                    DelClick({
+                                      serviceId: element.serviceId,
+                                      date_in: element.date_in,
+                                    });
+                                  }}
+                                />
+                              </View>
+                            ) : null}
                           </View>
                         </View>
                       );

@@ -1,9 +1,13 @@
 import React, { Component } from "react";
 import { StyleSheet, TouchableOpacity, Text } from "react-native";
 
-function BTN({ text, style, onPress, styleCaption }) {
+function BTN({ text, style, onPress, styleCaption, disabled }) {
   return (
-    <TouchableOpacity style={[styles.container, style]} onPress={onPress}>
+    <TouchableOpacity
+      style={[styles.container, style]}
+      disabled={disabled}
+      onPress={onPress}
+    >
       <Text style={[styles.caption, styleCaption]}>{text}</Text>
     </TouchableOpacity>
   );

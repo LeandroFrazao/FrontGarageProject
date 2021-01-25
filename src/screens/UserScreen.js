@@ -18,6 +18,7 @@ export default function UserScreen({ navigation }) {
   });
   const [vehicleData, setVehicleData] = useState([]);
   const [helperData, setHelperData] = useState({ msg: "" });
+  const [updateScreen, setupdateScreen] = useState(false);
 
   const onFailure = (error) => {
     if (error && error.response) {
@@ -43,6 +44,7 @@ export default function UserScreen({ navigation }) {
     } catch (e) {
       console.log(e);
     }
+    setupdateScreen(true);
   };
 
   const loadUserVehicles = () => {
@@ -58,6 +60,12 @@ export default function UserScreen({ navigation }) {
       })
       .catch(onFailure);
   };
+  useEffect(() => {
+    if (updateScreen) {
+      loadUserVehicles();
+      setupdateScreen(false);
+    }
+  }, [updateScreen]);
 
   useEffect(() => {
     loadUserData();
@@ -119,7 +127,8 @@ export default function UserScreen({ navigation }) {
     <View style={styles.container}>
       <NavigationEvents
         onWillFocus={() => {
-          loadUserVehicles();
+          setVehicleData([]);
+          setupdateScreen(true);
         }}
         onWillBlur={() => {
           setVehicleData([]);
@@ -151,13 +160,6 @@ export default function UserScreen({ navigation }) {
               ServiceClick();
             }}
           />
-          <BTN
-            style={styles.btn}
-            text="Invoices"
-            onPress={() => {
-              // onClick();
-            }}
-          />
         </View>
         <View style={styles.boxVehicles}>
           <View style={styles.headerVehicles}>
@@ -178,16 +180,14 @@ export default function UserScreen({ navigation }) {
                     <View style={{ flexDirection: "row" }}>
                       <View style={{ maxWidth: 320 }}>
                         <Text style={styles.vehicleText}>
-                          {" "}
                           Type: {element.type}
-                          {"      "}Make: {element.make}
-                          {"      "}Engine: {element.engine}
+                          {"   "}Make: {element.make}
+                          {"   "}Engine: {element.engine}
                         </Text>
                         <Text style={styles.vehicleText}>
-                          {" "}
                           Model: {element.model}
-                          {"    "}Year: {element.year}
-                          {"    "}VIN: {element.vin}
+                          {"   "}Year: {element.year}
+                          {"   "}VIN: {element.vin}
                         </Text>
                       </View>
                       <View>

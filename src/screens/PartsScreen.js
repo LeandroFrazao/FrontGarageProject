@@ -91,8 +91,6 @@ export default function PartsScreen({ navigation }) {
     // get all parts
     GetParts()
       .then((response) => {
-        console.log(response.data.parts);
-        // console.log(response);
         let makes = [];
         let models = [];
         let categories = [];
@@ -111,7 +109,6 @@ export default function PartsScreen({ navigation }) {
         categories = [...new Set(categories)];
         partNames = [...new Set(partNames)];
 
-        //  console.log(makes);
         let makesMap = [];
         let modelMap = [];
         let categoryMap = [];
@@ -170,8 +167,6 @@ export default function PartsScreen({ navigation }) {
             a.value < b.value ? -1 : a.value > b.value ? 1 : 0
           )
         );
-
-        //console.log(makesMap, modelMap, categoryMap, partNameMap);
       })
       .catch(onFailure);
   };
@@ -210,7 +205,6 @@ export default function PartsScreen({ navigation }) {
         )
     );
 
-    console.log(result);
     let partNameMap = [];
     result.map((obj) => {
       partNameMap.push({
@@ -218,7 +212,6 @@ export default function PartsScreen({ navigation }) {
         value: obj.partName,
       });
     });
-    console.log(partNameMap);
     setPartsName(
       partNameMap.sort((a, b) =>
         a.value < b.value ? -1 : a.value > b.value ? 1 : 0
@@ -233,7 +226,6 @@ export default function PartsScreen({ navigation }) {
 
   const validateData = ({ prop, item }) => {
     let toReturn = {};
-    console.log(prop, item);
     if (!prop && prop == "") {
       toReturn = "Type the " + item;
     } else if (prop.length < 2 && item != "cost") {
@@ -263,9 +255,7 @@ export default function PartsScreen({ navigation }) {
       partName: getValidation.partName,
       make: getValidation.make,
     });
-    console.log(getValidation);
-    // let email = navigation.state.params.vehicle.email;
-    console.log(navigation.state.params);
+
     if (
       getValidation.category == "" &&
       getValidation.model == "" &&
@@ -310,7 +300,6 @@ export default function PartsScreen({ navigation }) {
   };
 
   const EditClick = (index) => {
-    console.log(partsCollection[index]);
     setBtnOption({ add: false, update: true });
     setHelperData({ ...helperData, error: "" });
     setPartsData({
