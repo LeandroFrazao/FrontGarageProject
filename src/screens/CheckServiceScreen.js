@@ -68,7 +68,7 @@ export default function CheckServiceScreen({ navigation }) {
 
   let controllerDropStatus;
 
-  const onFailure = async (error) => {
+  const onFailure = (error) => {
     console.log(error);
 
     if (error && error.response) {
@@ -210,7 +210,7 @@ export default function CheckServiceScreen({ navigation }) {
   };
 
   // update Booking
-  const UpdateClick = async ({
+  const UpdateClick = ({
     serviceType,
     vin,
     date_in,
@@ -299,6 +299,17 @@ export default function CheckServiceScreen({ navigation }) {
     });
   };
 
+  // to go to invoice page
+  const invoiceClick = (index) => {
+    console.log(index);
+    //if admin clicked in one of the services, it opens the booking page with its data on the fields, ]
+    //if clicked on bookings, it opens the booking page with blank fields.
+
+    navigation.navigate("InvoiceScreen", {
+      CheckService: serviceInProgress[index],
+    });
+  };
+
   const EditClick = ({ index, status }) => {
     console.log(serviceBooked[index]);
 
@@ -333,14 +344,27 @@ export default function CheckServiceScreen({ navigation }) {
     }
   };
 
-  const deleteService = ({ serviceId }) => {
+  const deleteService = ({ serviceId, email }) => {
     console.log(serviceId + " deleted");
-    let email = navigation.state.params.userEmail;
 
     DeleteService({ serviceId, email })
       .then((response) => {
         setServiceBooked(
           serviceBooked.filter((element) => element.serviceId !== serviceId)
+        );
+        loadServiceCollection();
+      })
+      .catch(onFailure);
+  };
+  const deleteServiceInProgress = ({ serviceId, email }) => {
+    console.log(serviceId + " deleted");
+
+    DeleteService({ serviceId, email })
+      .then((response) => {
+        setOldServicesCollection(
+          oldServicesCollection.filter(
+            (element) => element.serviceId !== serviceId
+          )
         );
         loadServiceCollection();
       })
@@ -362,10 +386,15 @@ export default function CheckServiceScreen({ navigation }) {
       .catch(onFailure);
   };
 
-  const DelClick = ({ serviceId, date_in }) => {
+  const DelClick = ({ serviceId, date_in, email, type }) => {
     if (Platform.OS == "web") {
       if (confirm("Cancel booking on " + date_in + " ?")) {
-        deleteService({ serviceId: serviceId });
+        if (type == "Booked") {
+          deleteService({ serviceId, email });
+        }
+        if (type == "InProgress") {
+          deleteServiceInProgress({ serviceId, email });
+        }
       }
     } else {
       Alert.alert(
@@ -379,7 +408,12 @@ export default function CheckServiceScreen({ navigation }) {
           {
             text: "OK",
             onPress: () => {
-              deleteService({ serviceId: serviceId });
+              if (type == "Booked") {
+                deleteService({ serviceId, email });
+              }
+              if (type == "InProgress") {
+                deleteServiceInProgress({ serviceId, email });
+              }
             },
           },
         ],
@@ -743,6 +777,9 @@ export default function CheckServiceScreen({ navigation }) {
                                   DelClick({
                                     serviceId: element.serviceId,
                                     date_in: element.date_in,
+                                    email: element.email,
+
+                                    type: "Booked",
                                   });
                                 }}
                               />
@@ -828,6 +865,9 @@ export default function CheckServiceScreen({ navigation }) {
                                   DelClick({
                                     serviceId: element.serviceId,
                                     date_in: element.date_in,
+                                    email: element.email,
+
+                                    type: "InProgress",
                                   });
                                 }}
                               />
@@ -837,10 +877,7 @@ export default function CheckServiceScreen({ navigation }) {
                                   styleCaption={styles.smallBtnText}
                                   text="Invoice"
                                   onPress={() => {
-                                    /*  DelClick({
-                                   serviceId: element.serviceId,
-                                   date_in: element.date_in,
-                                 }); */
+                                    invoiceClick(index);
                                   }}
                                 />
                               ) : null}

@@ -83,15 +83,14 @@ export default function LoginScreen({ navigation }) {
   };
 
   function click({ email, key }) {
-    // let email = "bolivar@lgmail.com";
-    // let key = "123456";
-    //email = "leandrofrazao@hotmail.com"; /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //email = "bolivar@lgmail.com";
-    //  email = "developer.lrf@gmail.com";
-    //email = "hulk@marvel.com";
-    email = "alan@email.ie";
-    key = "654321";
-    //key = "123456";
+    //customer let email = "bolivar@lgmail.com";
+    //admin email = "leandrofrazao@hotmail.com";  key = "123456"; /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //admin email = "admin@admin.ie";  key = "123456";
+    //customer email = "bolivar@lgmail.com";  key = "123456";
+    // customer email = "developer.lrf@gmail.com";  key = "123456";
+    //customer email = "hulk@marvel.com";  key = "123456";
+    //customer email = "alan@email.ie";  key = "654321";
+
     let getValidation = {};
     getValidation.email = validateData({ prop: email, item: "email" });
     getValidation.key = validateData({ prop: key, item: "key" });

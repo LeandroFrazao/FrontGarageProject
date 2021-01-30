@@ -217,12 +217,12 @@ export default function ServiceScreen({ navigation }) {
           if (obj.count > 3) {
             fullDay[obj._id] = {
               key: obj.count,
-              color: "red",
+              color: "#FF0000",
               selected: true,
               marked: true,
               dayTextColor: "#F5F5F5",
               disableTouchEvent: true,
-              dotColor: "red",
+              dotColor: "#FF0000",
               selectedColor: "#C7D4D7",
             };
           } else if (obj.count == 3) {
@@ -230,14 +230,21 @@ export default function ServiceScreen({ navigation }) {
               key: obj.count,
               marked: true,
               dayTextColor: "#F5F5F5",
-              dotColor: "orange",
+              dotColor: "#B3A100",
             };
-          } else if (obj.count >= 1) {
+          } else if (obj.count == 2) {
             fullDay[obj._id] = {
               key: obj.count,
               marked: true,
               dayTextColor: "#F5F5F5",
-              dotColor: "#ECE515",
+              dotColor: "#0049DC",
+            };
+          } else if (obj.count == 1) {
+            fullDay[obj._id] = {
+              key: obj.count,
+              marked: true,
+              dayTextColor: "#F5F5F5",
+              dotColor: "#2CDC00",
             };
           }
         });

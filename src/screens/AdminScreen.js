@@ -12,8 +12,15 @@ import BTN from "../components/BTN";
 import { Calendar } from "react-native-calendars";
 import Icon from "react-native-vector-icons/Ionicons";
 import moment from "moment";
-import { GetService, GetBookings, DeleteService } from "../services/APIConnect";
+import {
+  GetService,
+  GetBookings,
+  DeleteService,
+  GetUsers,
+} from "../services/APIConnect";
 import { NavigationEvents } from "react-navigation";
+import * as Print from "expo-print";
+import * as MediaLibrary from "expo-media-library";
 
 export default function AdminScreen({ navigation }) {
   const [userData, setUserData] = useState({
@@ -34,10 +41,12 @@ export default function AdminScreen({ navigation }) {
     minDate: new Date(
       new Date().getFullYear(),
       new Date().getMonth(),
-      new Date().getDate() + 1
+      new Date().getDate()
     ),
   });
 
+  const [usersCollection, setUsersCollection] = useState([]);
+  const [bookingsDay, setBookingsDay] = useState([]);
   const [serviceInProgress, setServiceInProgress] = useState([]);
   const [serviceBooked, setServiceBooked] = useState([]);
   const [oldServicesCollection, setOldServicesCollection] = useState([]);
@@ -46,7 +55,7 @@ export default function AdminScreen({ navigation }) {
 
   const [updateAll, setupdateAll] = useState(false);
   const [updateUser, setupdateUser] = useState(false);
-
+  const [toPrintBookings, setToPrintBookings] = useState(false);
   const onFailure = (error) => {
     if (error) {
       console.log(error);
@@ -71,10 +80,15 @@ export default function AdminScreen({ navigation }) {
       disabledDates[startDay.day("Sunday").format("YYYY-MM-DD")] = {
         disabled: true,
         disableTouchEvent: true,
+        dotColor: "#fff",
       };
       startDay.add(7, "days");
     }
-    disabledDates[today] = { selected: true, selectedColor: "#EBF2FF" };
+    disabledDates[today] = {
+      selected: true,
+      selectedColor: "#EBF2FF",
+      dotColor: "#fff",
+    };
     setMarkedDays({ ...markedDays, ...disabledDates });
     setupdateAll(true);
   };
@@ -86,16 +100,17 @@ export default function AdminScreen({ navigation }) {
         let fullDay = {};
 
         bookings = response.data.results;
+        console.log(bookings);
         bookings.map((obj) => {
           if (obj.count > 3) {
             fullDay[obj._id] = {
               key: obj.count,
-              color: "red",
+              color: "#FF0000",
               selected: true,
               marked: true,
               dayTextColor: "#F5F5F5",
               disableTouchEvent: true,
-              dotColor: "red",
+              dotColor: "#FF0000",
               selectedColor: "#C7D4D7",
             };
           } else if (obj.count == 3) {
@@ -103,14 +118,21 @@ export default function AdminScreen({ navigation }) {
               key: obj.count,
               marked: true,
               dayTextColor: "#F5F5F5",
-              dotColor: "orange",
+              dotColor: "#B3A100",
             };
-          } else if (obj.count >= 1) {
+          } else if (obj.count == 2) {
             fullDay[obj._id] = {
               key: obj.count,
               marked: true,
               dayTextColor: "#F5F5F5",
-              dotColor: "#ECE515",
+              dotColor: "#0049DC",
+            };
+          } else if (obj.count == 1) {
+            fullDay[obj._id] = {
+              key: obj.count,
+              marked: true,
+              dayTextColor: "#F5F5F5",
+              dotColor: "#2CDC00",
             };
           }
         });
@@ -130,22 +152,24 @@ export default function AdminScreen({ navigation }) {
         let selecteddays = {};
         let currentBookings = [];
         let inProgress = [];
-        let oldBookings = [];
         console.log(services);
         services.map((obj) => {
           if (obj.date_in >= currentDate && obj.status == "Booked") {
             currentBookings.push(obj);
-
+            console.log(obj);
             selecteddays[obj.date_in] = {
-              key: "bookedday",
+              key: markedDays[obj.date_in] ? markedDays[obj.date_in].key : 0,
               color: "#FFFF84",
               selected: true,
               marked: true,
               dayTextColor: "#F5F5F5",
-              disableTouchEvent: true,
-              dotColor: "green",
+              disableTouchEvent: false,
+              dotColor: markedDays[obj.date_in]
+                ? markedDays[obj.date_in].dotColor
+                : "#fff",
               selectedColor: "#FFFF84",
             };
+            console.log(selecteddays);
           } else if (obj.status == "Fixed" || obj.status == "In Service") {
             inProgress.push(obj);
           }
@@ -166,6 +190,17 @@ export default function AdminScreen({ navigation }) {
       .catch(onFailure);
   };
 
+  // load information of user, includind their vehicles
+  const loadUsers = () => {
+    GetUsers()
+      .then((response) => {
+        let user = [];
+        user = response.data.users;
+        setUsersCollection(user);
+      })
+      .catch(onFailure);
+  };
+
   //after sundays are marked in the calendar, it loads data of bookings to be marked in the calendar.
   useEffect(() => {
     if (updateAll) {
@@ -182,8 +217,9 @@ export default function AdminScreen({ navigation }) {
 
   //load data from veihicles, services, and get all sundays of 2 months.
   useEffect(() => {
-    console.log("use 0");
+    console.log("UseEffect");
     DisableSundays();
+    loadUsers();
   }, []);
 
   useEffect(() => {
@@ -207,6 +243,14 @@ export default function AdminScreen({ navigation }) {
     getStorage();
   }, []);
 
+  // to call to print after the useState of toPrintbooking is updated
+  useEffect(() => {
+    if (toPrintBookings) {
+      PrintClick();
+      setToPrintBookings(false);
+    }
+  }, [toPrintBookings]);
+
   const PartsClick = () => {
     navigation.navigate("PartsScreen", {});
   };
@@ -228,11 +272,186 @@ export default function AdminScreen({ navigation }) {
   const invoiceClick = (index) => {
     //if admin clicked in one of the services, it opens the booking page with its data on the fields, ]
     //if clicked on bookings, it opens the booking page with blank fields.
-    if (index) {
-      navigation.navigate("InvoiceScreen", {
-        CheckService: serviceInProgress[index],
-      });
+
+    navigation.navigate("InvoiceScreen", {
+      CheckService: serviceInProgress[index],
+    });
+  };
+
+  // Print list of bookings for specific date
+  const PrintClick = () => {
+    if (Platform.OS == "web") {
+      if (confirm("Print bookings of day " + bookingsDay.date + "?")) {
+        ToPrint();
+      }
+    } else {
+      Alert.alert(
+        "Print bookings to PDF",
+        "Confirm?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "OK",
+            onPress: () => {
+              ToPrint();
+            },
+          },
+        ],
+        { cancelable: false }
+      );
     }
+  };
+
+  const htmlforMobile = `
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Pdf Content</title>
+      <style>
+          body { 
+              font-size: 16px;
+              color: rgb(28, 28, 28);
+          }            h1, h2 {
+              text-align: center;
+          }
+          table {
+            border: 1px solid black;
+          }
+          td{
+            width:150px;  text-align:center;
+            height:30px
+          }
+      </style>
+  </head>
+  <body>
+      <h1>Bookings </h1>
+      <h2> Date: ${bookingsDay.date} </h2>   
+      <br>        
+      ${bookingsDay.bookings}
+      </body>
+  </html>
+`;
+
+  const createPDF = async (html) => {
+    console.log(html);
+    try {
+      const { uri } = await Print.printToFileAsync({ html });
+      console.log(uri);
+      if (Platform.OS === "android") {
+        const permission = await MediaLibrary.requestPermissionsAsync();
+
+        if (permission.granted) {
+          await MediaLibrary.createAssetAsync(uri);
+          Alert.alert(
+            "Bookings printed as pdf",
+            "PDF is located on " + uri,
+            [
+              {
+                text: "OK",
+              },
+            ],
+            { cancelable: false }
+          );
+        }
+      }
+      return uri;
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // function to detect which Platform is being used, then call the specific function to print
+  const ToPrint = () => {
+    if (Platform.OS != "web") {
+      createPDF(htmlforMobile);
+    } else {
+      const popwin = window.open("", "", "heigh=400", "width=400");
+      if (popwin && popwin.document) {
+        popwin.document.write(htmlforMobile);
+        popwin.document.close();
+        popwin.print();
+      }
+    }
+  };
+
+  // when admin clicks on the calendar, it checks if the day has bookings and asked if the admin wants to print it
+  const ClickDay = (date) => {
+    console.log(serviceBooked);
+    console.log(usersCollection);
+    let bookings = [];
+    let singleBooking;
+    serviceBooked.map((obj, index) => {
+      if (obj.date_in == date) {
+        console.log(obj);
+        usersCollection.map((element) => {
+          if (
+            element.email == obj.email &&
+            element.vehicles &&
+            element.vehicles.length > 0
+          ) {
+            element.vehicles.map((item) => {
+              if (item.vin == obj.vin) {
+                singleBooking =
+                  "<table>" +
+                  "<tr style='height:40px ;'>" +
+                  "<td style='width:200px ;'>" +
+                  "Service Type: " +
+                  obj.serviceType +
+                  "</td>" +
+                  "</tr>" +
+                  "<tr>" +
+                  "<td>" +
+                  "User: " +
+                  element.name +
+                  "  " +
+                  "</td>" +
+                  "<td>" +
+                  " Phone: " +
+                  element.phone +
+                  "</td>" +
+                  "<td  style='width:300px ;'>" +
+                  " Email: " +
+                  element.email +
+                  "</td>" +
+                  "</tr>" +
+                  "<tr>" +
+                  "<td>" +
+                  "VIN: " +
+                  obj.vin +
+                  "</td>" +
+                  "<td>" +
+                  item.make +
+                  " " +
+                  item.model +
+                  " " +
+                  "</td>" +
+                  "<td>" +
+                  "Year: " +
+                  " " +
+                  item.year +
+                  " " +
+                  "</td>" +
+                  "</tr>" +
+                  "</table>" +
+                  "<br>";
+              }
+            });
+          }
+        });
+        if (singleBooking.length !== 0) {
+          bookings += singleBooking;
+        }
+      }
+    });
+    console.log(bookings);
+
+    setBookingsDay({ date: date, bookings: bookings });
+    setToPrintBookings(true);
   };
 
   const deleteService = ({ serviceId, email }) => {
@@ -247,7 +466,7 @@ export default function AdminScreen({ navigation }) {
       })
       .catch(onFailure);
   };
-  const deleteServiceInProgress = ({ serviceId }) => {
+  const deleteServiceInProgress = ({ serviceId, email }) => {
     console.log(serviceId + " deleted");
 
     DeleteService({ serviceId, email })
@@ -302,15 +521,15 @@ export default function AdminScreen({ navigation }) {
     <View style={[styles.container, { height: 1000 }]}>
       <NavigationEvents
         onWillFocus={() => {
-          setupdateUser(true);
+          // to activate a chain of userstates, to reload the marked days on the calendar
+          serviceBooked.length !== 0 ? setupdateUser(true) : "";
         }}
       />
       <>
         <ScrollView>
           <View style={styles.body}>
             <View style={styles.boxTitle}>
-              <Text style={styles.title}>Administrator </Text>
-              <Text style={styles.title}>User: {userData.name} </Text>
+              <Text style={styles.title}>Administrator:{userData.name} </Text>
             </View>
             <View style={styles.buttons}>
               <BTN
@@ -419,10 +638,15 @@ export default function AdminScreen({ navigation }) {
               minDate={dateSetting.minDate}
               maxDate={dateSetting.maxDate}
               onDayPress={(day) => {
-                //  ClickDay(day.dateString);
+                //message: Do a long press on a date to print its bookings.
+              }}
+              onDayLongPress={(day) => {
+                ClickDay(day.dateString);
               }}
               markingType="custom"
+              disabledByDefault
             />
+            <Text> Long-Press on a date to print its bookings. </Text>
           </View>
           <View style={[styles.boxService, { height: 200 }]}>
             <View style={[styles.headerService]}>
@@ -607,7 +831,7 @@ const styles = StyleSheet.create({
   boxTitle: {
     backgroundColor: "#E6E6E6",
     width: "100%",
-    height: 80,
+    height: 50,
     alignItems: "center",
     justifyContent: "center",
   },

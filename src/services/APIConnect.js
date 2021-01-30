@@ -2,8 +2,8 @@ import axios from "axios";
 
 // Create axios client, pre-configured with baseURL
 export const APIConnect = axios.create({
-  // baseURL: "https://tranquil-coast-47648.herokuapp.com",
-  baseURL: "http://localhost:3000",
+  baseURL: "https://tranquil-coast-47648.herokuapp.com",
+  //baseURL: "http://localhost:3000",
 
   timeout: 100000,
 });
@@ -49,6 +49,12 @@ export const Register = async ({
     key,
   });
 };
+
+//only admin
+export const GetUsers = async () => {
+  return await APIConnect.get("/users/");
+};
+
 //only admin
 export const GetVehicles = async (email) => {
   return await APIConnect.get("/vehicles/" + email);

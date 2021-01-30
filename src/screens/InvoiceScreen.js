@@ -332,29 +332,41 @@ export default function InvoiceScreen({ navigation }) {
       totalCost: serviceCost,
     });
     if (userData.name !== "") {
-      let list = [
-        {
-          title: "User Information",
-          data: [
-            "Name: " + userData.name,
-            "Phone: " + userData.phone,
-            "Email: " + userData.email,
-            "Vehicle Identification Number: " + serviceData.vin,
-          ],
-        },
-        {
-          title: "Service Type",
-          data: [serviceData.serviceType + ": " + serviceCost],
-        },
-        {
-          title: "Parts",
-          data: [null],
-        },
-        {
-          title: "TOTAL DUE",
-          data: ["€" + serviceCost, "Payment due on collection."],
-        },
-      ];
+      let list;
+      userData.vehicles.map((obj) => {
+        if (obj.vin == serviceData.vin) {
+          list = [
+            {
+              title: "User Information",
+              data: [
+                "Name: " + userData.name,
+                "Phone: " + userData.phone,
+                "Email: " + userData.email,
+                "Vehicle Identification Number: " + serviceData.vin,
+                "Vehicle: " +
+                  obj.make +
+                  " " +
+                  obj.model +
+                  " Year: " +
+                  " " +
+                  obj.year,
+              ],
+            },
+            {
+              title: "Service Type",
+              data: [serviceData.serviceType + ": " + serviceCost],
+            },
+            {
+              title: "Parts",
+              data: [null],
+            },
+            {
+              title: "TOTAL DUE",
+              data: ["€" + serviceCost, "Payment due on collection."],
+            },
+          ];
+        }
+      });
 
       setListData(list);
     } else setupdateUser(true);
@@ -443,7 +455,8 @@ export default function InvoiceScreen({ navigation }) {
       <h2> User Information </h2>   
       <h4>Name: ${userData.name} </h4>
       <h4>Phone: ${userData.email} </h4>
-      <h4>Identification Number: ${serviceData.vin} </h4>
+      <h4>Vehicle Identification Number: ${serviceData.vin} </h4>
+      </h4>
       <h3>Service Type</h2>
       <h4>${serviceData.serviceType}:  ${costInvoice.serviceCost} </h4>
       <h3>Parts</h2>
