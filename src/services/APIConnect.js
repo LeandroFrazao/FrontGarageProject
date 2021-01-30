@@ -1,10 +1,9 @@
 import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Create axios client, pre-configured with baseURL
 export const APIConnect = axios.create({
-  baseURL: "https://tranquil-coast-47648.herokuapp.com",
-  //baseURL: "http://localhost:3000",
+  // baseURL: "https://tranquil-coast-47648.herokuapp.com",
+  baseURL: "http://localhost:3000",
 
   timeout: 100000,
 });
@@ -17,36 +16,6 @@ export const DeleteUserToken = () => {
 // Set  Token in Authorization to be included in all calls
 export const SetUserToken = (token) => {
   APIConnect.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-};
-
-export const RemoveStorage = async (item) => {
-  try {
-    await AsyncStorage.removeItem(item);
-  } catch (e) {
-    console.log(e);
-  }
-
-  console.log(item + " removed!");
-};
-export const SaveStorage = async (item, value) => {
-  try {
-    await AsyncStorage.setItem(item, value);
-  } catch (e) {
-    console.log(e);
-  }
-};
-
-export const GetStorage = async (item) => {
-  try {
-    let userEmail = await AsyncStorage.getItem(item);
-    if (userEmail == null) {
-      //userEmail = userEmail.substr(1, userEmail.length - 2);
-      console.log(item + "from AsyncStorage is null");
-    }
-    return userEmail;
-  } catch (e) {
-    console.log(e);
-  }
 };
 
 export const Login = async (email, key) => {
@@ -127,11 +96,12 @@ export const UpdateVehicle = async ({
   engine,
   year,
   email,
+  id,
 }) => {
   console.log(email);
   model = model.toUpperCase();
   make = upperFirstLetter(make);
-  return await APIConnect.put("/users/" + email + "/vehicles/" + vin, {
+  return await APIConnect.put("/users/" + email + "/vehicles/" + id, {
     vin,
     type,
     make,

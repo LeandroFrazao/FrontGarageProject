@@ -105,8 +105,8 @@ export default function AddVehicleScreen({ navigation }) {
         toReturn = "Select the " + item;
       } else toReturn = "Type the " + item;
     } else if (item == "vin") {
-      if (prop.length < 9) {
-        toReturn = "Minimum 9 characters, only numbers and letters";
+      if (prop.length < 8) {
+        toReturn = "Minimum 8 characters";
       } else toReturn = "";
     } else if (item == "model") {
       if (prop.length < 2) {

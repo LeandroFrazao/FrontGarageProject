@@ -86,10 +86,12 @@ export default function LoginScreen({ navigation }) {
     // let email = "bolivar@lgmail.com";
     // let key = "123456";
     //email = "leandrofrazao@hotmail.com"; /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    email = "bolivar@lgmail.com";
+    //email = "bolivar@lgmail.com";
     //  email = "developer.lrf@gmail.com";
     //email = "hulk@marvel.com";
-    key = "123456";
+    email = "alan@email.ie";
+    key = "654321";
+    //key = "123456";
     let getValidation = {};
     getValidation.email = validateData({ prop: email, item: "email" });
     getValidation.key = validateData({ prop: key, item: "key" });

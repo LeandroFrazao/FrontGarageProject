@@ -18,6 +18,7 @@ export default function UpdateVehicleScreen({ navigation }) {
     model: "",
     engine: "",
     year: "",
+    id: "",
   });
   const [vehicleMake, setVehicleMake] = useState([]);
 
@@ -55,7 +56,7 @@ export default function UpdateVehicleScreen({ navigation }) {
       if (error && error.response.data.error) {
         setHelperData({
           ...helperData,
-          vin: "Vehicle registered already!",
+          vin: "Duplicate VIN",
           type: "",
           make: "",
           model: "",
@@ -106,6 +107,7 @@ export default function UpdateVehicleScreen({ navigation }) {
       model: vehicle.model,
       engine: vehicle.engine,
       year: vehicle.year,
+      id: vehicle._id,
     });
   };
   // To load data on screen
@@ -122,8 +124,8 @@ export default function UpdateVehicleScreen({ navigation }) {
         toReturn = "Select the " + item;
       } else toReturn = "Type the " + item;
     } else if (item == "vin") {
-      if (prop.length < 9) {
-        toReturn = "Minimum 9 characters, only numbers and letters";
+      if (prop.length < 8) {
+        toReturn = "Minimum 8 characters";
       } else toReturn = "";
     } else if (item == "model") {
       if (prop.length < 2) {
@@ -146,7 +148,7 @@ export default function UpdateVehicleScreen({ navigation }) {
     return toReturn;
   };
 
-  async function onclick({ vin, type, make, model, engine, year }) {
+  async function onclick({ vin, type, make, model, engine, year, id }) {
     let getValidation = {};
     getValidation.vin = validateData({ prop: vin, item: "vin" });
     getValidation.model = validateData({ prop: model, item: "model" });
@@ -174,7 +176,7 @@ export default function UpdateVehicleScreen({ navigation }) {
       getValidation.type == "" &&
       getValidation.make == ""
     ) {
-      UpdateVehicle({ vin, type, make, model, engine, year, email })
+      UpdateVehicle({ vin, type, make, model, engine, year, email, id })
         .then((response) => {
           console.log(response);
 
@@ -399,6 +401,7 @@ export default function UpdateVehicleScreen({ navigation }) {
               type: vehicleData.type,
               year: vehicleData.year,
               engine: vehicleData.engine,
+              id: vehicleData.id,
             });
           }}
         ></BTN>

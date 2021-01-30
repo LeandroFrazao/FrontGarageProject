@@ -26,7 +26,7 @@ import {
   UpdateService,
 } from "../services/APIConnect";
 
-import { NavigationEvents } from "react-navigation";
+// BOOKINGS SCREEN FOR Customers
 
 export default function ServiceScreen({ navigation }) {
   const [dateSetting, setDateSetting] = useState({
@@ -488,15 +488,11 @@ export default function ServiceScreen({ navigation }) {
         setServiceCollection([]);
         setOldServicesCollection([]);
         // reset calendar, reload bookings and disable sundays
-
         setResetCalendar(true);
         setSelectedDay({
           day: "",
           options: "",
         });
-        //DisableSundays();
-        //  setupdateUser(true);
-        //   loadServiceCollection();
 
         CleanClick();
       })
@@ -512,7 +508,7 @@ export default function ServiceScreen({ navigation }) {
     serviceId,
   }) => {
     if (Platform.OS == "web") {
-      if (confirm("Update booking on " + date_in + " ?")) {
+      if (confirm("Update booking to " + date_in + " ?")) {
         updateService({
           serviceType,
           vin,
@@ -576,7 +572,11 @@ export default function ServiceScreen({ navigation }) {
         setServiceCollection(
           serviceCollection.filter((element) => element.serviceId !== serviceId)
         );
-        loadServiceCollection();
+        //   loadServiceCollection();
+        // setServiceCollection([]);
+        //   setOldServicesCollection([]);
+        // reset calendar, reload bookings and disable sundays
+        setResetCalendar(true);
       })
       .catch(onFailure);
   };

@@ -78,7 +78,7 @@ function RegisterScreen({ navigation }) {
   };
 
   function click({ name, email, phone, address, city, userType, key }) {
-    // console.log(email);
+    //console.log(name, email, phone, address, city, userType, key);
     //console.log(userKey);
     // let email = "bolivar@lgmail.com";
     // let key = "123456";
@@ -182,7 +182,7 @@ function RegisterScreen({ navigation }) {
               name: userData.name,
               phone: userData.phone,
               address: userData.address,
-              city: userData.address,
+              city: userData.city,
               key: userData.key,
               userType: userData.userType,
             });
