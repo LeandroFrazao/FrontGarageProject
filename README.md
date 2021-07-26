@@ -11,3 +11,6 @@ The mobile Application was made using the react native architecture, with Expo b
 -	Calendar from "react-native-calendars" – It is a calendar component;
 -	Icon from "react-native-vector-icons/Ionicons"- It is a package with icons;
 -	Moment from "moment" – It is a JavaScript date library;
+
+
+![image](https://user-images.githubusercontent.com/61284549/127019666-d5dc2fad-7916-458f-b471-93d1a4c18aab.png)
